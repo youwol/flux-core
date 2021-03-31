@@ -3,14 +3,19 @@ import { Subject, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { freeContract } from "../lib/module-flow/contract";
 import { Context } from "../lib/module-flow/context";
+import { FluxPack } from "../lib/module-flow/models-base";
 
-let pack = {};
+export let testPack = new FluxPack({
+    name:'flux-test',
+    description: 'flux pack to test',
+    version: '0.0.0'
+});
 
 console.log = () =>{}
 export namespace Schemas{
 
     @Schema({
-        pack: pack,
+        pack: testPack,
         description: "Input type"
     })
     export class Input {
@@ -24,7 +29,7 @@ export namespace Schemas{
     }
 
     @Schema({
-        pack: pack,
+        pack: testPack,
         description: "Output type"
     })
     export class Output {
@@ -46,7 +51,7 @@ export namespace ModuleTest{
         }
     }
     @Flux({
-        pack: pack,
+        pack: testPack,
         namespace: ModuleTest,
         id: "ModuleTest",
         displayName: "ModuleTest",
@@ -93,7 +98,17 @@ export namespace PluginTest{
         constructor() {
         }
     }
-
+    @Flux({
+        pack: testPack,
+        namespace: PluginTest,
+        id: "PluginTest",
+        displayName: "PluginTest",
+        description: "A test plugin"
+    })
+    @BuilderView({
+        namespace: PluginTest,
+        icon: ""
+    })
     export class Module extends PluginFlow<ModuleTest.Module>{
 
         readonly output$ : Pipe<Schemas.Input>
@@ -165,7 +180,7 @@ return [{text: "option 1", value: { n : 0 }},
 
 
     @Flux({
-        pack: pack,
+        pack: testPack,
         namespace: DropDown,
         id: "DropDown",
         displayName: "DropDown",
@@ -237,7 +252,7 @@ export namespace Console {
     }
 
     @Flux({
-        pack:           pack,
+        pack:           testPack,
         namespace:      Console,
         id:             "Console",
         displayName:    "Console",
@@ -280,7 +295,7 @@ export namespace Label{
     }
 
 
-    @Flux({ pack: pack, namespace: Label, id: "Label", displayName: "Label", description: "Label" })
+    @Flux({ pack: testPack, namespace: Label, id: "Label", displayName: "Label", description: "Label" })
     @BuilderView({ namespace: Label, icon: ""})
     @RenderView({ namespace: Label,
         render: (mdle) => renderHtmlElement(mdle)

@@ -1,6 +1,6 @@
 
 
-import { ModuleFlow, ModuleRendererBuild, ModuleConfiguration, ModuleRendererRun } from './models-base';
+import { ModuleFlow, ModuleRendererBuild, ModuleConfiguration, ModuleRendererRun, FluxPack } from './models-base';
 import * as rxjs from 'rxjs'
 import 'reflect-metadata'
 import * as _ from 'lodash'
@@ -14,18 +14,15 @@ export let pack           = {}
 
 export function Flux(metadata) {
   
-  let pack = metadata["pack"]
-
-  if( !pack["modules"] )
-    pack["modules"] = {}
+  let pack = metadata["pack"] as FluxPack
 
   return (target) => {
-    pack["modules"][metadata.id]  = metadata.namespace
+    pack.addModule(metadata.id, metadata.namespace)
     let ModuleNamespace           = metadata.namespace      
     
     ModuleNamespace.id            = metadata.id          
-    ModuleNamespace.packId        = pack.id            
-    ModuleNamespace.uid           = metadata.id  + "@" + pack.id       
+    ModuleNamespace.packId        = pack.name            
+    ModuleNamespace.uid           = metadata.id  + "@" + pack.name       
     ModuleNamespace.displayName   = metadata.displayName          
     ModuleNamespace.description   = metadata.description     
     ModuleNamespace.isPlugIn      = metadata.compatibility != undefined

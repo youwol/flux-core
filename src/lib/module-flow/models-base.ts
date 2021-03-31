@@ -71,6 +71,7 @@ export type Factory = {
     packId: string,
     uid: string,
     displayName: string,
+    isPlugIn: boolean,
     schemas: any,
     resources: {[key:string]: string}
     consumersData: {[key:string]: any}
@@ -88,6 +89,12 @@ export class FluxPack{
     public readonly version: string
     public readonly description: string
     public readonly urlCDN: string
+
+    /**
+     *  This attributes stores the module's factory, it is pospulated when the decorator
+     *  '@Flux' is hitted by the compiler
+     */
+    private modules : {[key:string]: Factory} = {} // Module's factory id => Factory
 
     constructor(
         {
@@ -108,6 +115,14 @@ export class FluxPack{
             this.assetId = getAssetId(name)
             this.urlCDN = getUrlBase(name, version)
         }
+
+    addModule( moduleId: string, factory: Factory){
+        this.modules[moduleId] = factory
+    }
+
+    getFactory(moduleId: string){
+        return this.modules[moduleId]
+    }
 }
 
 

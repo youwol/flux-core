@@ -1,11 +1,13 @@
-import { Schema, Property, Method, Flux, BuilderView, RenderView } from "../index"
-import { ModuleFlow } from '../lib/module-flow/models-base';
+import { Schema, Property, Flux, BuilderView, RenderView } from "../index"
+import { FluxPack, ModuleFlow } from '../lib/module-flow/models-base';
 
 console.log = () =>{}
 
-let pack : any = {
-    id:"my-pack"
-}
+let pack = new FluxPack({
+    name:"my-pack",
+    description: "",
+    version: "0.0.0"
+})
 
 @Schema({
     pack: pack,
@@ -57,25 +59,26 @@ export namespace MyModule {
 
 test('MyModule', () => {
 
-    expect(pack.modules.MyModule).toBeDefined()  
-    let m = pack.modules.MyModule
-    expect(m.displayName).toEqual("My Module")    
-    expect(m.id).toEqual("MyModule")         
-    expect(m.isPlugIn).toEqual(false)         
-    expect(m.packId).toEqual("my-pack")      
-    expect(m.uid).toEqual("MyModule@my-pack")       
+    let factory = pack.getFactory('MyModule')
+    expect(factory).toBeDefined()  
+    
+    expect(factory.displayName).toEqual("My Module")    
+    expect(factory.id).toEqual("MyModule")         
+    expect(factory.isPlugIn).toEqual(false)         
+    expect(factory.packId).toEqual("my-pack")      
+    expect(factory.uid).toEqual("MyModule@my-pack")       
 
-    expect(m.PersistentData).toBeDefined()     
-    expect(m.Module).toBeDefined()         
-    expect(m.RenderView).toBeDefined()     
-    expect(m.BuilderView).toBeDefined()       
-    expect(m.Configuration).toBeDefined()        
+    expect(factory.PersistentData).toBeDefined()     
+    expect(factory.Module).toBeDefined()         
+    expect(factory.RenderView).toBeDefined()     
+    expect(factory.BuilderView).toBeDefined()       
+    expect(factory.Configuration).toBeDefined()        
     
 
-    let configuration = new m.Configuration()
-    let confData = new m.PersistentData()
+    let configuration = new factory.Configuration()
+    let confData = new factory.PersistentData()
     expect(confData).toBeDefined() 
-    let builderView = new m.BuilderView()
+    let builderView = new factory.BuilderView()
     expect(builderView.icon).toBeDefined() 
     expect(builderView.render).toBeDefined() 
     let icon =  builderView.icon()
@@ -85,10 +88,10 @@ test('MyModule', () => {
 
     let moduleId= 'toto'
     let environment = {}
-    let mdle = new m.Module( { moduleId, configuration, MyModule, environment })
+    let mdle = new factory.Module( { moduleId, configuration, MyModule, environment })
 
     expect(mdle).toBeDefined()     
-    let renderView = new m.RenderView(mdle)
+    let renderView = new factory.RenderView(mdle)
     expect(renderView.render).toBeDefined() 
 
     let rendered = renderView.render()
@@ -128,14 +131,15 @@ export namespace MyModule2 {
 
 test('MyModule2', () => {
 
-    expect(pack.modules.MyModule2).toBeDefined()  
-    let m = pack.modules.MyModule2
+    let factory = pack.getFactory('MyModule2')
+    expect(factory).toBeDefined()  
+    
     let moduleId= 'tutu'
     let environment = {}
-    let configuration = new m.Configuration()
-    let mdle = new m.Module( { moduleId, configuration, MyModule, environment })
+    let configuration = new factory.Configuration()
+    let mdle = new factory.Module( { moduleId, configuration, MyModule, environment })
 
-    let renderView = new m.RenderView(mdle)
+    let renderView = new factory.RenderView(mdle)
 
     let rendered = renderView.render()
     expect(rendered.nodeName).toEqual("DIV")
@@ -175,14 +179,15 @@ export namespace MyModule3 {
 
 test('MyModule3', () => {
 
-    expect(pack.modules.MyModule3).toBeDefined()  
-    let m = pack.modules.MyModule3
+    let factory = pack.getFactory('MyModule3')
+    expect(factory).toBeDefined()  
+    
     let moduleId= 'titi'
     let environment = {}
-    let configuration = new m.Configuration()
-    let mdle = new m.Module( { moduleId, configuration, MyModule, environment })
+    let configuration = new factory.Configuration()
+    let mdle = new factory.Module( { moduleId, configuration, MyModule, environment })
 
-    let builderView = new m.BuilderView()
+    let builderView = new factory.BuilderView()
 
     let rendered = builderView.render(mdle)
     expect(rendered.nodeName).toEqual("rect")
