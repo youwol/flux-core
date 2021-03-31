@@ -1,6 +1,7 @@
 import { ModuleFlow, PluginFlow, Connection } from '../module-flow/models-base';
 
 export class Package{
+
     constructor(public readonly id: string,
          public readonly description: any,
           public readonly modules: any,
@@ -11,6 +12,7 @@ export class Package{
 
 
 export class PackageId{
+
     constructor( public readonly id: any ){
     }
 }
@@ -24,12 +26,14 @@ export class ModuleView{
 }
 
 export class DescriptionBoxProperties{
+
     constructor(public readonly color){
 
     }
 }
 
 export class DescriptionBox{
+
     constructor( public readonly descriptionBoxId: string,
                  public readonly title: string,
                  public readonly modulesId: Array<string> ,
@@ -47,18 +51,19 @@ export class BuilderRendering{
 
 export class RunnerRendering{
 
-    constructor( public readonly layout : string = "", public readonly style : string = "" ){
-    }
+    constructor( public readonly layout : string = "", public readonly style : string = "" ){}
 }
 
 export class PackageLink{
     constructor( public readonly id: string, public readonly version : string ){}
 }
+
 export class Requirements{
 
     constructor( public readonly fluxComponents: Array<string>,public readonly fluxPacks: Array<string>,
         public readonly libraries: Object,public readonly loadingGraph: any){}
 }
+
 export class Description{
 
     constructor( public readonly name: string,public readonly description: string ){}
@@ -100,16 +105,6 @@ export class Workflow {
                  public readonly rootLayerTree :LayerTree
                  ){}
 } 
-/*
-export class WorkflowInstance {
-
-    constructor( public readonly workflow : Workflow,  
-                 public readonly subscriptions : Array<any> ,
-                 public readonly eventLoopControllerId : String ,
-                 public readonly entryPoints : any,
-                 public readonly idsMapping : any){}
-} */
-
 
 export class Project{
 
