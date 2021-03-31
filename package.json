@@ -1,0 +1,51 @@
+{
+  "name": "@youwol/flux-core",
+  "version": "0.0.0",
+  "license": "MIT",
+  "author": "greinisch@youwol.com",
+  "description": "Core library to create flux applications",
+  "keywords": [ "youwol", "flux" ],
+  "main": "dist/@youwol/flux-core.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "autogen":"node scripts/auto-gen.js",
+    "build": "yarn build:dev",
+    "build:dev": "yarn autogen && webpack --mode development",
+    "build:prod": "yarn autogen && webpack --mode production",
+    "test": "jest -c ./jest.config.js --rootDir .",
+    "test-coverage": "jest -c ./jest.config.js --rootDir . --collect-coverage --collectCoverageFrom=./src/lib/**/*.ts ",
+    "doc": "typedoc src/ --exclude src/index.ts --exclude src/tests --out dist/docs --theme default",
+    "publish-npm-public": "yarn build:prod && yarn test-coverage && yarn publish --access public"
+  },
+  "peerDependencies": {
+    "reflect-metadata": "0.x",
+    "rxjs": "6.x",
+    "@youwol/cdn-client": "0.x",
+    "lodash":"4.x"
+  },
+  "devDependencies": {
+    "lodash":"4.17.15",
+    "reflect-metadata": "0.1.13",
+    "rxjs": "6.1.0",
+    "@youwol/cdn-client": "0.0.2",
+    "@types/node": "14.14.37",
+    "eslint": "7.23.0",
+    "ts-lib": "0.0.5",
+    "typescript": "4.2.3",
+    "webpack": "5.28.0",
+    "webpack-cli": "4.6.0",
+    "eslint-webpack-plugin": "2.5.3",
+    "ts-loader": "8.1.0",
+    "jest": "26.6.3",
+    "jest-junit": "12.0.0",
+    "ts-jest": "26.5.4",
+    "@types/jest": "26.0.22",
+    "typedoc":"0.20.34"
+  },
+  "youwol": {
+    "pipeline": {
+      "name": "yw_pipeline_webpack_ts",
+      "version": "0.0.0"
+    }
+  }
+}
