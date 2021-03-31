@@ -1,95 +1,130 @@
-import { from, of } from "rxjs"
+import { from, Observable, of, Subscription } from "rxjs"
 import { map, mapTo, mergeMap, reduce, tap } from "rxjs/operators"
 import { BuilderRendering, DescriptionBox, ModuleView, Project, LayerTree, Workflow } from "./core-models"
 import { packCore } from "../modules/factory-pack-core"
-import { Adaptor, AdaptorConfiguration, Connection, ModuleFlow } from "../module-flow/models-base"
+import { Adaptor, AdaptorConfiguration, Connection, Factory, FluxPack, ModuleFlow, PluginFlow } from "../module-flow/models-base"
+import * as schemas from './client-schemas'
+import { IEnvironment } from "../environment"
+
 
 
 function getPackage(name:string){
 
     if(window[name])
       return window[name]
-    
-    if( name.includes('/') ){
-      let [prefix, suffix] = name.split('/')
-      if(window[prefix][suffix])
-        return window[prefix][suffix]
-    }
+
+    console.warn(`The dependency ${name} has not been found, requirements needs update to include namespace in flux-packs.`)
+
     if(window[`@youwol/${name}`])
       return window[`@youwol/${name}`]
-
-    if(window["@youwol"][name])
-      return window["@youwol"][name]
 
     throw Error(`Can not find loaded package ${name}`)
 }
 
-function backwardCompatibilityPatches(project: any){
 
-  let patch = (mdle) => {
-    if( typeof(mdle.factoryId)=="string")
-      mdle.factoryId = {
-        module: mdle.factoryId.split('@')[0], 
-        pack:"@youwol/"+mdle.factoryId.split('@')[1]
-      }
-  }
-  project.workflow.modules.forEach( mdle => {
-    patch(mdle)
-  })
-  project.workflow.plugins.forEach( mdle => {
-    patch(mdle)
-  })
-  return project
-}
+export function loadProjectDependencies$(
+    project: schemas.Project,
+    environment: IEnvironment
+    ): Observable<{project:schemas.Project, packages: Array<FluxPack>}> {
 
-
-export function loadProjectDependencies$(backend, projectId: string){
-
-    return backend.getProject(projectId).pipe(
-        map( (project) => {
-            return backwardCompatibilityPatches(project)
+    return of(project.requirements.loadingGraph)
+    .pipe(
+        mergeMap((root: any) => {
+            return environment.fetchLoadingGraph(project.requirements.loadingGraph)
         }),
-        mergeMap( (project: any) => {
-            return of( project.requirements.loadingGraph )
-            .pipe(
-                mergeMap( (root:any) => fetchJs$(backend, project.requirements.loadingGraph,0) ),
-                tap( r => console.log("dependencies loaded" , {libraries: r})),
-                mergeMap( () => {
-                    return from(project.requirements.fluxPacks.map( p => getPackage(p) ))
-                }),
-                mergeMap( (pack:any) =>{
-                    return pack.install ? pack.install().pipe( mapTo( pack) ) : of(pack) 
-                }),
-                reduce( (acc,e) => acc.concat(e), []),
-                map( packages => {
-                    return {project, packages:[{pack:packCore},...packages]} 
-                })
-            )
-        })
-    )
-}
+        tap(r => console.log("dependencies loaded", { libraries: r })),
+        mergeMap(() => {
+            return from(project.requirements.fluxPacks.map(p => getPackage(p)))
+        }),
+        mergeMap((jsModule: any) => {
+            let installFct = jsModule.install || jsModule.pack.install
+            if(!installFct)
+                return of(jsModule)
+            let install = installFct( environment )
+            if( install instanceof Observable)
+                return install.pipe(mapTo(jsModule))
 
-export function loadProject(backend, projectId: string, workflowGetter : ()=>Workflow, subscriptionsStore, environment, logger ) {
-
-    return loadProjectDependencies$(backend, projectId).pipe(
-        map( ({project, packages}) => {
-            return createProject( project, packages, workflowGetter, subscriptionsStore, environment, logger ) 
+            if( install instanceof Promise)
+                return from(install).pipe(mapTo(jsModule))
+            
+            return of(jsModule)
+        }),
+        reduce((acc, e) => acc.concat(e), []),
+        map(packages => {
+            return { project, packages: [{ pack: packCore }, ...packages]} 
         })
     )
 }
 
 
-export function createProject( project , packs, workflowGetter : ()=>Workflow , subscriptionsStore, environment, logger){
+export function loadProject$(
+    project$: Observable<schemas.Project>, 
+    workflowGetter : ()=>Workflow, 
+    subscriptionsStore: Map<Connection, any>, 
+    environment: IEnvironment, 
+    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+
+    let projectData$ = project$.pipe(
+        mergeMap( (project: schemas.Project) => {
+            return loadProjectDependencies$(project, environment) 
+        }),
+        map(({ project, packages }) => {
+            return createProject(project, packages, workflowGetter, subscriptionsStore, environment, logger)
+        })
+    )
+    return projectData$
+}
+
+
+export function loadProjectDatabase$(
+    projectId: string, 
+    workflowGetter : ()=>Workflow, 
+    subscriptionsStore: Map<Connection,Subscription>, 
+    environment: IEnvironment, 
+    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}>{
+
+    return loadProject$(environment.getProject(projectId), workflowGetter, subscriptionsStore, environment, logger)
+}
+
+
+export function loadProjectURI$(
+    projectURI: string, 
+    workflowGetter : ()=>Workflow, 
+    subscriptionsStore:  Map<Connection,Subscription>, 
+    environment: IEnvironment, 
+    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+
+    let project = JSON.parse(decodeURIComponent(projectURI)) as schemas.Project
+    return loadProject$( of(project), workflowGetter, subscriptionsStore, environment, logger)
+}
+
+
+export function createProject( 
+    project: schemas.Project , 
+    packs,
+    workflowGetter : ()=>Workflow, 
+    subscriptionsStore: Map<Connection,Subscription>, 
+    environment: IEnvironment, 
+    logger
+    ): {project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}{
 
     let packages = packs.map( p => p.pack)
     
     packages.filter( p => p.initialize).forEach( p => p.initialize(environment))
 
-    let modulesFactory = packages.reduce( (acc,e) => acc.concat( Object.values(e.modules).map( (Factory:any)=> {
-        
-        let factoryKey = JSON.stringify({module:Factory["id"], pack: e.schemaVersion ? e.id: `@youwol/${e.id}`})
-        return [ factoryKey, Factory] }
-    )) , [])
+    let modulesFactory = packages
+    .reduce( (acc,e) => 
+        acc
+        .concat( 
+            Object.values(e.modules ? e.modules : {})
+            .map( (Factory:any)=> {
+            
+                let factoryKey = JSON.stringify({module:Factory["id"], pack: e.name})
+                return [ factoryKey, Factory] }
+            )
+        ), 
+        []
+    )
 
     modulesFactory = new Map(modulesFactory)
     let rootLayerTree = instantiateProjectLayerTree(project.workflow.rootLayerTree ) 
@@ -109,35 +144,25 @@ export function createProject( project , packs, workflowGetter : ()=>Workflow , 
 }
 
 
-export function fetchJs$(backend, loadingGraph,i) {
-
-    let currentLayer$ =  from( loadingGraph.definition[i] )
-    .pipe(  mergeMap( url => {
-        if(loadingGraph.graphType=="sequential")
-            return backend.loadScript(url, true,window) 
-        if(loadingGraph.graphType=="sequential-v1")
-            return backend.loadAssetPackage(url[0], url[1], true,window) 
-        throw Error(`LoadingGraph type not known (${loadingGraph.graphType})`)
-    }), 
-    reduce( (urls,url)  => urls.concat( url) , []) )
-
-    return  i < loadingGraph.definition.length - 1 ?
-        currentLayer$.pipe( mergeMap( urls0 => fetchJs$(backend, loadingGraph, i +1)
-                                                .pipe( map( urls => urls0.concat(urls))))) :
-        currentLayer$
-}   
-
-export function instantiateProjectLayerTree(data):LayerTree{
+export function instantiateProjectLayerTree(data: schemas.LayerTree) : LayerTree{
 
     return new LayerTree(data.layerId,data.title,data.children.map( c => instantiateProjectLayerTree(c)),
     data.moduleIds)
 }
 
-function isGroupingModule(moduleData){
+
+function isGroupingModule(moduleData: schemas.Module): boolean{
     return ["GroupModules", "Component"].includes(moduleData.factoryId.module)
 }
 
-export function instantiateProjectModules( modulesData, modulesFactory, environment, workflowGetter, logger ): Array<ModuleFlow>{
+
+export function instantiateProjectModules( 
+    modulesData: Array< schemas.Module>, 
+    modulesFactory: Map<string, Factory>, 
+    environment: IEnvironment, 
+    workflowGetter: () => Workflow, 
+    logger 
+    ): Array<ModuleFlow>{
 
    let modules = modulesData
    .map( moduleData => {
@@ -170,7 +195,12 @@ export function instantiateProjectModules( modulesData, modulesFactory, environm
    return modules
 }
 
-export function instantiateProjectPlugins( pluginsData, modules, pluginsFactory, logger){
+export function instantiateProjectPlugins(
+    pluginsData: Array<schemas.Plugin>, 
+    modules: Array<ModuleFlow>, 
+    pluginsFactory:Map<string, Factory>, 
+    logger
+    ): Array<PluginFlow<unknown>>{
     
     let plugins = pluginsData.map( pluginData => {
 
@@ -200,7 +230,11 @@ export function instantiateProjectPlugins( pluginsData, modules, pluginsFactory,
     return plugins
 }
 
-export function instantiateProjectConnections( allSubscriptions:Map<Connection,any>,connectionsData : Array<any>, modules ){
+export function instantiateProjectConnections( 
+    allSubscriptions: Map<Connection,Subscription>,
+    connectionsData : Array<schemas.Connection>, 
+    modules: Array<ModuleFlow>
+    ) : Array<Connection> {
 
     Array.from(allSubscriptions.values()).forEach( (value:any)=> value.unsubscribe() );
 
@@ -239,9 +273,11 @@ export function instantiateProjectConnections( allSubscriptions:Map<Connection,a
     return connections
 }
 
-export function instantiateProjectBuilderRendering( modulesData: Array<ModuleFlow>, rendererData ) : BuilderRendering{
+export function instantiateProjectBuilderRendering( 
+    modulesData: Array<ModuleFlow>, 
+    rendererData: schemas.BuilderRendering 
+    ) : BuilderRendering{
     
-     
     let modulesViewData = rendererData.modulesView
     let connectionsViewData = rendererData.connectionsView || []
    
