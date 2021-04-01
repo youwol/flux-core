@@ -11,103 +11,6 @@ import { Project } from "../lib/flux-project/core-models"
 import '../lib/modules/group.module'
 import { testPack } from "./test-modules"
 
-/*
-let testPack = new FluxPack({
-    name: 'flux-test',
-    version: '0.0.0',
-    description: 'flux pack to test'
-})
-
-export namespace SimpleModule {
-
-    @Schema({
-        pack: testPack,
-        description: "Persistent Data of Explorer"
-    })
-    export class PersistentData  {
-
-        @Property({ description: "property0" })
-        readonly property0 : number
-
-        constructor( {property0} : {property0?: number }= {}) {
-            this.property0 = property0 != undefined ? property0 : 0
-        }
-    }
-
-    @Flux({
-        pack:           testPack,
-        namespace:      SimpleModule,
-        id:             "SimpleModule",
-        displayName:    "SimpleModule",
-        description:    "A simple module"
-    })
-    @BuilderView({
-        namespace:      SimpleModule,
-        icon:           `<path d=""/>`
-    })
-    @RenderView({
-        namespace:      SimpleModule,
-        render :        (mdle) => "<div type='test-div'></div>"
-    })
-    export class Module extends ModuleFlow{
-        
-        output0$ : Pipe<any>
-    
-        constructor(params){ 
-            super(params)    
-            this.addInput({
-                id:"input0", description: 'an input', contract:freeContract(), 
-                onTriggered: ({data, configuration, context}) => this.do(data, configuration, context) 
-            })
-            this.output0$ = this.addOutput({id:"output0"})
-        }
-
-        do(data, conf, ctx){
-            this.output0$.next(data);
-         }
-    }
-}
-
-export namespace SimplePlugin {
-
-    export class PersistentData  {
-
-        @Property({ description: "property0" })
-        readonly property0 : number
-
-        constructor( {property0} : {property0?: number }= {}) {
-            this.property0 = property0 != undefined ? property0 : 0
-        }
-    }
-
-    @Flux({
-        pack:           testPack,
-        namespace:      SimplePlugin,
-        id:             "SimplePlugin",
-        displayName:    "SimplePlugin",
-        description:    "plugin",
-        compatibility:  { a: (mdle)=>true }
-    })
-    @BuilderView({
-        namespace:      SimplePlugin,
-        icon:           `<path d=""/>`
-    })
-    @RenderView({
-        namespace:      SimplePlugin,
-        render : (mdle) => "<div type='test-div'></div>"
-    })
-    export class Module extends PluginFlow<SimpleModule.Module>{
-
-        constructor(params){ 
-            super(params)    
-            this.addInput({ 
-                id:"input0", description: 'an input', contract:freeContract(), 
-                onTriggered: ({data, configuration, context}) => this.do(data, configuration, context) 
-            })
-        }
-        do(data, conf, ctx){}
-    }
-}*/
 
 export class MockEnvironment implements IEnvironment{
 
@@ -144,11 +47,11 @@ export class MockEnvironment implements IEnvironment{
         return of(mockProjectsDB[projectId])
     }
 
-    postProject(projectId:string, project:Object ) : Observable<void> {
+    postProject(projectId:string, project: schemas.Project ) : Observable<void> {
         throw Error("MockEnvironment.postProject not implemented")
     }
 
-    getLoadingGraph(body) : Observable<schemas.LoadingGraph> {
+    getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
         throw Error("MockEnvironment.getLoadingGraph not implemented")
     }
 }
