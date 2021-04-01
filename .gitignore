@@ -3,3 +3,4 @@ node_modules
 dist/
 coverage/
 junit.xml
+src/auto_generated.ts
