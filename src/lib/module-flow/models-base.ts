@@ -11,6 +11,13 @@ import { Context, ErrorLog, Log } from './context';
 
 export type Pipe<T> = Subject<{ data: T, context?: Context }>
 
+export function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 export class Slot {
 
     constructor(
@@ -158,12 +165,12 @@ export abstract class ModuleFlow {
 
     constructor({ moduleId, configuration, Factory, cache, logger, environment, helpers }:
         {
-            moduleId: string, configuration: ModuleConfiguration, environment: Environment;
+            moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
             Factory: Factory, cache?: Cache, logger?: any, helpers?: {[key:string]: any}
         }
     ) {
         this.environment = environment
-        this.moduleId = moduleId
+        this.moduleId = moduleId ? moduleId : uuidv4()
         this.configuration = configuration
         this.Factory = Factory
         this.helpers = helpers ? helpers : {}

@@ -12,7 +12,6 @@ export * from './lib/module-flow/cache';
 export * from './lib/module-flow/scene';
 export * from './lib/module-flow/orchestrator';
 export * from './lib/module-flow/drawer-builder';
-export * from './lib/utils';
 export * from './lib/module-flow/decorators';
 export * from './lib/extensibility/public-extension-interfaces';
 export * from './lib/flux-project/core-models';

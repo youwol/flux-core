@@ -2,9 +2,20 @@ import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, LoadingGraph
 import { from, Observable } from "rxjs"
 import { map } from "rxjs/operators"
 import * as schemas from './flux-project/client-schemas'
-import { createObservableFromFetch } from "./utils"
 
 
+export function createObservableFromFetch( request, extractFct = (d) =>d ){
+
+    return Observable.create(observer => {
+        fetch(request)
+          .then(response => response.json()) // or text() or blob() etc.
+          .then(data => {
+            observer.next( extractFct(data));
+            observer.complete();
+          })
+          .catch(err => observer.error(err));
+    });
+}
 
 export interface IEnvironment{
 
@@ -19,7 +30,7 @@ export interface IEnvironment{
 
     postProject(projectId:string, project:Object ) : Observable<void> 
 
-    getLoadingGraph(body) : Observable<schemas.LoadingGraph>
+    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph>
 }
 
 
@@ -67,10 +78,10 @@ export class Environment implements IEnvironment{
         return createObservableFromFetch(request)
     }
 
-    getLoadingGraph(body) : Observable<schemas.LoadingGraph> {
+    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
     
         let url = `/api/cdn-backend/queries/loading-graph`
-        let request = new Request(url, { method:'POST', body: JSON.stringify(body)})
+        let request = new Request(url, { method:'POST', body: JSON.stringify({libraries})})
         return createObservableFromFetch(request)
     }
 

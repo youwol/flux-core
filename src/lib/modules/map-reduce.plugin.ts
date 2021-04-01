@@ -1,8 +1,8 @@
 import {Flux,BuilderView, Schema} from '../module-flow/decorators'
 import { GroupModules } from './group.module';
 import { packCore } from './factory-pack-core';
-import { ModuleFlow, PluginFlow, Pipe } from '../module-flow/models-base';
-import { uuidv4 } from '../utils';
+import { ModuleFlow, PluginFlow, Pipe, uuidv4 } from '../module-flow/models-base';
+
 import * as _ from 'lodash'
 import { freeContract } from '../module-flow/contract';
 import { Context } from '../module-flow/context';
