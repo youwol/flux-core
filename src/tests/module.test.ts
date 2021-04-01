@@ -19,7 +19,7 @@ test('Module', (done) => {
     let mdle = new ModuleTest.Module( { moduleId, configuration, Factory, environment })
     mdle.cache.maxCount = 2
 
-
+    expect(mdle.moduleId).toEqual('toto')
     expect(mdle.inputSlots.length).toEqual(1)
     expect(mdle.outputSlots.length).toEqual(1)
 
@@ -65,10 +65,12 @@ test('Module with adaptor', (done) => {
         data: new ModuleTest.PersistentData(), 
         schema:"PersistentData"
     })
-    let moduleId= 'toto'
     let environment = {}
     let Factory = ModuleTest
-    let mdle = new ModuleTest.Module( { moduleId, configuration, Factory, environment })
+    let mdle = new ModuleTest.Module( { configuration, Factory, environment })
+
+    expect(mdle.moduleId.split('-').length).toEqual(5)
+
     mdle.cache.maxCount = 2
 
     let code = ` 
