@@ -1,6 +1,6 @@
 import { Observable, of, Subscription } from "rxjs"
 import * as schemas from '../lib/flux-project/client-schemas'
-import { IEnvironment } from "../lib/environment"
+import { IEnvironment, MockEnvironment } from "../lib/environment"
 import { BuilderView, Flux, Property, RenderView, Schema } from "../lib/module-flow/decorators"
 import { Connection, FluxPack, ModuleFlow, Pipe, PluginFlow } from "../lib/module-flow/models-base"
 import { freeContract } from "../lib/module-flow/contract"
@@ -11,7 +11,7 @@ import { Project } from "../lib/flux-project/core-models"
 import '../lib/modules/group.module'
 import { testPack } from "./test-modules"
 
-
+/*
 export class MockEnvironment implements IEnvironment{
 
     static css = new Array<HTMLLinkElement>()
@@ -54,12 +54,12 @@ export class MockEnvironment implements IEnvironment{
     getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
         throw Error("MockEnvironment.getLoadingGraph not implemented")
     }
-}
+}*/
+let environment = new MockEnvironment(mockProjectsDB as any, [testPack])
 
 
 test('load empty project', (done) => {
 
-    let environment = new MockEnvironment()
     let subscriptionsStore = new  Map<Connection,Subscription>()
     let project$ = loadProjectDatabase$('emptyProject', () => undefined,subscriptionsStore,environment, undefined)
 
@@ -82,7 +82,6 @@ test('load empty project', (done) => {
 
 test('load simple project', (done) => {
 
-    let environment = new MockEnvironment()
     let subscriptionsStore = new  Map<Connection,Subscription>()
     let project$ = loadProjectDatabase$('simpleProject', () => undefined,subscriptionsStore,environment, undefined)
 
