@@ -1,7 +1,6 @@
 /*
  * Public API Surface of flux-lib-core
  */
-export * from './auto-generated_old';
 export * from "./lib/simple-parser/branch"
 export * from "./lib/simple-parser/graph"
 export * from "./lib/simple-parser/parser"
