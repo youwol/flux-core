@@ -27,5 +27,5 @@ export * from './lib/modules/replication-utils';
 export * from './lib/modules/component-replica.plugin';
 export * from './lib/flux-project/loaders';
 export * from './lib/module-flow/contract';
-export * from './lib/module-flow/module-configuration';
+export * from './lib/module-flow/configuration-validation';
 

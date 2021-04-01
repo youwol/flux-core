@@ -1,8 +1,7 @@
 import { flattenSchemaWithValue } from "./decorators"
-import { ModuleFlow } from "./models-base"
 import * as _ from 'lodash'
 
-enum StatusEnum{
+export enum StatusEnum{
     Error = "Error",
     Warning="Warning",
     Consistent = "Consistent"
@@ -16,16 +15,6 @@ export class ConfigurationStatus{
         public readonly missings: Array<string>,
         public readonly typeErrors: Array<{attributeName:string, actualValue: string, expectedType: string, error: string}>
         ){}
-    
-    isError(): boolean{
-        return this.status == StatusEnum.Error
-    }
-    isWarning(): boolean{
-        return this.status == StatusEnum.Warning
-    }
-    isConsistent(): boolean{
-        return this.status == StatusEnum.Consistent
-    }
 }
 
 
@@ -78,28 +67,24 @@ export function typeErrors(flattened): Array<{attributeName:string, actualValue:
 }
 
 
-export function configurationStatus(
-    mdle: ModuleFlow, 
-    newConfig: {[key:string]: unknown} | undefined,
+export function configurationStatus<T extends Object>(
+    persistentData: T, 
+    newConfig?: {[key:string]: unknown},
     ){
+
     if(!newConfig)
         return new ConfigurationStatus(StatusEnum.Consistent, [], [], [])
 
-    let defaultConfig = mdle.configuration.data
-
-    let mergedConfig = _.cloneDeep(defaultConfig)
+    let mergedConfig = _.cloneDeep(persistentData)
     _.mergeWith(mergedConfig, newConfig)
 
     let newConfigWithSchema =  _.cloneDeep(newConfig)
-    newConfigWithSchema.__proto__ = defaultConfig.__proto__
+    newConfigWithSchema.__proto__ = Object.getPrototypeOf(persistentData)
         
     let flattenedMerged = flattenSchemaWithValue(mergedConfig)
 
-    if(mdle.Factory.id=="Dispatcher")
-        return new ConfigurationStatus(StatusEnum.Consistent, [], [], [])
-        
-    let intrus = findIntrus("", newConfigWithSchema, defaultConfig)
-    let missings = findIntrus("", defaultConfig, mergedConfig)
+    let intrus = findIntrus("", newConfigWithSchema, persistentData)
+    let missings = findIntrus("", persistentData, mergedConfig)
     let errorsType = typeErrors(flattenedMerged)
     /*
     let flattenedNew = flattenSchemaWithValue(newConfigWithSchema)
