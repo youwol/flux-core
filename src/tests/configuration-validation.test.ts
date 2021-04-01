@@ -1,7 +1,6 @@
 import { configurationStatus, StatusEnum } from "../lib/module-flow/configuration-validation"
 import { Property, Schema } from "../lib/module-flow/decorators"
-import { MockEnvironment } from "./project-loading.test"
-import { DropDown, testPack } from "./test-modules"
+import { testPack } from "./test-modules"
 
 
 @Schema({
