@@ -10,8 +10,7 @@ test('Module', (done) => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new ModuleTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new ModuleTest.PersistentData()
     })
     let moduleId= 'toto'
     let environment = {}
@@ -62,8 +61,7 @@ test('Module with adaptor', (done) => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new ModuleTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new ModuleTest.PersistentData()
     })
     let environment = {}
     let Factory = ModuleTest
@@ -103,8 +101,7 @@ test('Plugin test', () => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new PluginTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new PluginTest.PersistentData()
     })
     let moduleId= 'toto'
     let environment = {}

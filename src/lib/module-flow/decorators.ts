@@ -49,8 +49,8 @@ export function Flux(metadata) {
           super({
             title: d.title == undefined ? metadata.displayName : d.title, 
             description:d.description == undefined ? metadata.description : d.description,
-            data: d.data ||  new (ModuleNamespace.PersistentData)() , 
-            schema:{extends:baseClass,attributes:attributes,methods:methods }}) 
+            data: d.data ||  new (ModuleNamespace.PersistentData)()
+          }) 
       }
     }
   }

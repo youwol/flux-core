@@ -10,8 +10,7 @@ test('empty group module test', () => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new ModuleTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new ModuleTest.PersistentData()
     })
 
     let layerId     = 'testLayerGroup'
@@ -31,8 +30,7 @@ test('group 2 modules, no connection', () => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new ModuleTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new ModuleTest.PersistentData()
     })
 
     let mdles = [1,2,3,4].map( i => new ModuleTest.Module( { moduleId:"mdle"+i, configuration, Factory:ModuleTest , environment: {} }) )
@@ -53,8 +51,7 @@ test('group 2 modules, 1 connection in, 1 connection out', () => {
     let configuration = new ModuleConfiguration({
         title:'title', 
         description:'description', 
-        data: new ModuleTest.PersistentData(), 
-        schema:"PersistentData"
+        data: new ModuleTest.PersistentData()
     })
     var workflow : Workflow = undefined
     let mdles = [1,2,3,4].map( i => new ModuleTest.Module( { moduleId:"mdle"+i, configuration, Factory:ModuleTest , environment: {} }) )

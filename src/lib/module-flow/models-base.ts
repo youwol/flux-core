@@ -62,14 +62,12 @@ export class ModuleConfiguration {
     public readonly title: string
     public readonly description: string
     public data: any
-    public readonly schema: Object
 
-    constructor({ title, description, data, schema }: { title: string, description: string, data: any, schema: any }) {
+    constructor({ title, description, data }: { title: string, description: string, data: any }) {
 
         this.title = title
         this.description = description
         this.data = data
-        this.schema = schema
     }
 }
 
@@ -388,13 +386,7 @@ return ({data,configuration,context}) => ({
 })`
         }) {
         super({
-            title, description, data,
-            schema: {
-                "type": "object",
-                "properties": {
-                    "code": { "type": "string" }
-                }
-            }
+            title, description, data
         })
     }
 }

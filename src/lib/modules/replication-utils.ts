@@ -92,7 +92,7 @@ export function duplicateComponent(component: Component.Module, idSuffix: string
     layout.querySelectorAll(".flux-component").forEach(e => e.id += "_" + idSuffix)
     let conf = component.configuration
     let newConfData = Object.assign({}, conf.data, { layout: layout.innerHTML })
-    let newConf = new component.Factory.Configuration({ title: conf.title, description: conf.description, data: newConfData, schemas: conf.schema })
+    let newConf = new component.Factory.Configuration({ title: conf.title, description: conf.description, data: newConfData })
 
     let newComponent = new component.Factory.Module(Object.assign({}, component, {
         workflowGetter,
