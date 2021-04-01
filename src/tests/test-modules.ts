@@ -45,7 +45,10 @@ export namespace Schemas{
 
 export namespace ModuleTest{
         
-
+    @Schema({
+        pack: testPack,
+        description: "PersistentData for ModuleTest"
+    })
     export class PersistentData{
         constructor() {
         }
@@ -94,6 +97,10 @@ export namespace ModuleTest{
 
 export namespace PluginTest{
         
+    @Schema({
+        pack: testPack,
+        description: "PersistentData for PluginTest"
+    })
     export class PersistentData{
         constructor() {
         }
@@ -152,6 +159,10 @@ export namespace DropDown{
 return [{text: "option 1", value: { n : 0 }},
         {text: "option 2",value: { n : 1 }}]
 `
+    @Schema({
+        pack: testPack,
+        description: "PersistentData for DropDown"
+    })
     export class PersistentData {
 
         @Property({ description: "text on the widget" })
@@ -241,6 +252,10 @@ return [{text: "option 1", value: { n : 0 }},
 
 export namespace Console {
 
+    @Schema({
+        pack: testPack,
+        description: "PersistentData for Console"
+    })
     export class PersistentData {
 
         @Property({ description: "log prefix" })
@@ -284,6 +299,10 @@ export namespace Console {
  */
 export namespace Label{
     
+    @Schema({
+        pack: testPack,
+        description: "PersistentData for Label"
+    })
     export class PersistentData {
 
         @Property({ description: "text on the label" })
