@@ -9,7 +9,7 @@ import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
 import { Context, ErrorLog, Log } from './context';
 
-export type Pipe<T> = Subject<{ data: T, context?: Context }>
+export type Pipe<T> = Subject<{ data: T, context?: Context, configuration?: unknown }>
 
 export function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -202,12 +202,16 @@ export abstract class ModuleFlow {
 
     addOutput<T>({id} : {id: string}): Pipe<T> {
 
-        let obs$ = new ReplaySubject<{ data: T, context: Context }>(1)
+        let obs$ = new ReplaySubject<{ data: T, configuration?:Object, context?: Context }>(1)
         let piped = obs$.pipe(
-            map(({ data, context }) => {
+            map(({ data, context, configuration }:{data: T, context?: Context, configuration?:Object}) => {
                 context && context.output('emit output', data)
                 this.log("send output", { data, context, this: this })
-                return { data, configuration:{}, context: context ? context.userContext : {}}
+                return { 
+                    data, 
+                    configuration: configuration ? configuration :{}, 
+                    context: context ? context.userContext : {}
+                }
             })
         )
         this.outputSlots.push(new OutputSlot<{ data: T, context: Context }>(id, this.moduleId, {}, piped as any))
