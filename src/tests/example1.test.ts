@@ -49,12 +49,12 @@ export namespace MyModule{
     }
 
     /*
-     * This section of code declare the persistent data of the module.
+     * This section of code declares the persistent data of the module.
      * Within the builder's view of a *Flux* application, PersistentData can be:
      * -    updated using an auto-generated widget
      * -    persisted when the project is saved 
      * 
-     * PersistentData can inherit from other classes (which can also exposed properties)
+     * PersistentData can inherit from other classes (whose can also exposed properties)
      */
     @Schema({
         pack
