@@ -82,6 +82,9 @@ export namespace MyModule{
          */
         constructor({operationType} :{operationType?:Operations}= {}) {
 
+            /*
+             * operationType is set to addition by default 
+             */
             this.operationType = (operationType != undefined) 
                 ? operationType 
                 : Operations.ADDITION
