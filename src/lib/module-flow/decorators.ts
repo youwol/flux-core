@@ -32,9 +32,6 @@ export function Flux(metadata) {
     
     
     // Generate Configuration class
-    let baseClass                 = tmpBases["PersistentData"]
-    let attributes                = tmpAttributes["PersistentData"] ? tmpAttributes["PersistentData"]["attributes"] : []
-    let methods                   = tmpMethods["PersistentData"] ? tmpMethods["PersistentData"]["methods"] : []
     tmpBases                      = {}
     tmpAttributes                 = {}
     tmpMethods                    = {}
