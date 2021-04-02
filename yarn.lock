@@ -807,6 +807,11 @@
   resolved "https://registry.yarnpkg.com/@youwol/cdn-client/-/cdn-client-0.0.2.tgz#72de58205026ce031f1112ce919a7e957f5667e0"
   integrity sha512-xU9DL2gYwT/D+HKqFBocOsIm4W74/XhhNf3NBTCFjGsXlw+VEM1iLg4PbzUW1JwRqVMNyjmLPa1UREjVGHek7g==
 
+"@youwol/flux-view@0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@youwol/flux-view/-/flux-view-0.0.5.tgz#1e3e51127c08201605571cd395941c05c4972cb8"
+  integrity sha512-R7JIAeNJsT/HlDcOA1PQQPgeGrBu8ESiGmDnlLEk/l21zW3aerwU4WwQSh5qDsAO9DKjCEK/PaTqodaR010Xng==
+
 abab@^2.0.3, abab@^2.0.5:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"

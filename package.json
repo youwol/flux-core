@@ -28,6 +28,7 @@
     "reflect-metadata": "0.1.13",
     "rxjs": "6.1.0",
     "@youwol/cdn-client": "0.0.2",
+    "@youwol/flux-view":"0.0.5",
     "@types/node": "14.14.37",
     "eslint": "7.23.0",
     "ts-lib": "0.0.5",
