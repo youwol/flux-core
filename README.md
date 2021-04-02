@@ -43,5 +43,5 @@ yarn doc
 
 The primary usage of *flux-core* is to provide the foundation to create modules for
 the *YouWol*'s low code solution *Flux*. An illustrated and commented example can be 
-found (here)[https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts]
+found [here](https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts)
 
