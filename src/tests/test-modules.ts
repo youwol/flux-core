@@ -362,3 +362,41 @@ export namespace Label{
         return view
     }
 }
+
+
+/**
+ */
+ export namespace DataEmitor{
+
+    @Schema({
+        pack: testPack
+    })
+    export class PersistentData {
+        constructor() {}
+    }
+
+    @Flux({ 
+        pack: testPack, 
+        namespace: DataEmitor, 
+        id: "DataEmitor", 
+        displayName: "DataEmitor",
+         description: "Label"
+    })
+    @BuilderView({ 
+        namespace: DataEmitor, 
+        icon: ""
+    })
+    export class Module extends ModuleFlow {
+        
+        output$ : Pipe<unknown>
+
+        constructor( params ){
+            super(params) 
+            this.output$ = this.addOutput({id:"value"})
+        }
+
+        emit( data: any ) {   
+            this.output$.next(data)
+        }
+    }
+}
