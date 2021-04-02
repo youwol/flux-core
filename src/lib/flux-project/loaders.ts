@@ -3,8 +3,8 @@ import { map, mapTo, mergeMap, reduce, tap } from "rxjs/operators"
 import { BuilderRendering, DescriptionBox, ModuleView, Project, LayerTree, Workflow } from "./core-models"
 import { packCore } from "../modules/factory-pack-core"
 import { Adaptor, AdaptorConfiguration, Connection, Factory, FluxPack, ModuleFlow, PluginFlow } from "../module-flow/models-base"
-import * as schemas from './client-schemas'
 import { IEnvironment } from "../environment"
+import { BuilderRenderingSchema, ConnectionSchema, LayerTreeSchema, ModuleSchema, PluginSchema, ProjectSchema } from "./client-schemas"
 
 
 
@@ -23,9 +23,9 @@ function getPackage(name:string){
 
 
 export function loadProjectDependencies$(
-    project: schemas.Project,
+    project: ProjectSchema,
     environment: IEnvironment
-    ): Observable<{project:schemas.Project, packages: Array<FluxPack>}> {
+    ): Observable<{project:ProjectSchema, packages: Array<FluxPack>}> {
 
     return of(project.requirements.loadingGraph)
     .pipe(
@@ -58,14 +58,14 @@ export function loadProjectDependencies$(
 
 
 export function loadProject$(
-    project$: Observable<schemas.Project>, 
+    project$: Observable<ProjectSchema>, 
     workflowGetter : ()=>Workflow, 
     subscriptionsStore: Map<Connection, any>, 
     environment: IEnvironment, 
     logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
 
     let projectData$ = project$.pipe(
-        mergeMap( (project: schemas.Project) => {
+        mergeMap( (project: ProjectSchema) => {
             return loadProjectDependencies$(project, environment) 
         }),
         map(({ project, packages }) => {
@@ -94,13 +94,13 @@ export function loadProjectURI$(
     environment: IEnvironment, 
     logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
 
-    let project = JSON.parse(decodeURIComponent(projectURI)) as schemas.Project
+    let project = JSON.parse(decodeURIComponent(projectURI)) as ProjectSchema
     return loadProject$( of(project), workflowGetter, subscriptionsStore, environment, logger)
 }
 
 
 export function createProject( 
-    project: schemas.Project , 
+    project: ProjectSchema , 
     packs,
     workflowGetter : ()=>Workflow, 
     subscriptionsStore: Map<Connection,Subscription>, 
@@ -144,20 +144,20 @@ export function createProject(
 }
 
 
-export function instantiateProjectLayerTree(data: schemas.LayerTree) : LayerTree{
+export function instantiateProjectLayerTree(data: LayerTreeSchema) : LayerTree{
 
     return new LayerTree(data.layerId,data.title,data.children.map( c => instantiateProjectLayerTree(c)),
     data.moduleIds)
 }
 
 
-function isGroupingModule(moduleData: schemas.Module): boolean{
+function isGroupingModule(moduleData: ModuleSchema): boolean{
     return ["GroupModules", "Component"].includes(moduleData.factoryId.module)
 }
 
 
 export function instantiateProjectModules( 
-    modulesData: Array< schemas.Module>, 
+    modulesData: Array< ModuleSchema>, 
     modulesFactory: Map<string, Factory>, 
     environment: IEnvironment, 
     workflowGetter: () => Workflow, 
@@ -196,7 +196,7 @@ export function instantiateProjectModules(
 }
 
 export function instantiateProjectPlugins(
-    pluginsData: Array<schemas.Plugin>, 
+    pluginsData: Array<PluginSchema>, 
     modules: Array<ModuleFlow>, 
     pluginsFactory:Map<string, Factory>, 
     logger
@@ -232,7 +232,7 @@ export function instantiateProjectPlugins(
 
 export function instantiateProjectConnections( 
     allSubscriptions: Map<Connection,Subscription>,
-    connectionsData : Array<schemas.Connection>, 
+    connectionsData : Array<ConnectionSchema>, 
     modules: Array<ModuleFlow>
     ) : Array<Connection> {
 
@@ -275,7 +275,7 @@ export function instantiateProjectConnections(
 
 export function instantiateProjectBuilderRendering( 
     modulesData: Array<ModuleFlow>, 
-    rendererData: schemas.BuilderRendering 
+    rendererData: BuilderRenderingSchema 
     ) : BuilderRendering{
     
     let modulesViewData = rendererData.modulesView

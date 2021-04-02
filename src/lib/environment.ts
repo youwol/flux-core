@@ -1,7 +1,7 @@
 import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, LoadingGraph } from "@youwol/cdn-client"
 import { from, Observable, of } from "rxjs"
 import { map } from "rxjs/operators"
-import * as schemas from './flux-project/client-schemas'
+import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
 import { FluxPack } from "./module-flow/models-base";
 
 
@@ -25,13 +25,13 @@ export interface IEnvironment{
 
     fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>
 
-    fetchLoadingGraph(loadingGraph: schemas.LoadingGraph) : Observable<schemas.LoadingGraph>
+    fetchLoadingGraph(loadingGraph: LoadingGraphSchema) : Observable<LoadingGraphSchema>
 
-    getProject(projectId) : Observable<schemas.Project>
+    getProject(projectId) : Observable<ProjectSchema>
 
     postProject(projectId:string, project:Object ) : Observable<void> 
 
-    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph>
+    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema>
 }
 
 
@@ -57,14 +57,14 @@ export class Environment implements IEnvironment{
         return from(fetchJavascriptAddOn( resources, this.executingWindow))
     }
 
-    fetchLoadingGraph(loadingGraph: LoadingGraph) : Observable<schemas.LoadingGraph> {
+    fetchLoadingGraph(loadingGraph: LoadingGraph) : Observable<LoadingGraphSchema> {
 
         return from(fetchLoadingGraph(loadingGraph, this.executingWindow)).pipe(
             map( () => loadingGraph)
         )
     }
 
-    getProject(projectId) : Observable<schemas.Project> {
+    getProject(projectId) : Observable<ProjectSchema> {
 
         let url =  `/api/assets-gateway/raw/flux-project/${projectId}`
         var request = new Request(url, {  method: 'GET', headers: {}, });
@@ -79,7 +79,7 @@ export class Environment implements IEnvironment{
         return createObservableFromFetch(request)
     }
 
-    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
+    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema> {
     
         let url = `/api/cdn-backend/queries/loading-graph`
         let request = new Request(url, { method:'POST', body: JSON.stringify({libraries})})
@@ -96,7 +96,7 @@ export class MockEnvironment implements IEnvironment{
     public readonly fluxPacksDB: {[key:string]: FluxPack}
 
     constructor(
-        public readonly projectsDB: {[key:string]: schemas.Project},
+        public readonly projectsDB: {[key:string]: ProjectSchema},
         fluxPacks: Array<FluxPack>){
         
         this.fluxPacksDB = fluxPacks.reduce((acc,e) => ({...acc, ...{[e.name]:e}}), {})
@@ -121,7 +121,7 @@ export class MockEnvironment implements IEnvironment{
         return of(resources)
     }
 
-    fetchLoadingGraph(loadingGraph: schemas.LoadingGraph) : Observable<schemas.LoadingGraph>{
+    fetchLoadingGraph(loadingGraph: LoadingGraphSchema) : Observable<LoadingGraphSchema>{
         loadingGraph.lock.forEach(
             (resource) => {
                 window[resource.name] = {pack:this.fluxPacksDB[resource.name]}
@@ -130,7 +130,7 @@ export class MockEnvironment implements IEnvironment{
         return of(loadingGraph)
     }
 
-    getProject(projectId: string) : Observable<schemas.Project>{
+    getProject(projectId: string) : Observable<ProjectSchema>{
 
         if(!this.projectsDB[projectId]){
             throw Error(`The project with id ${projectId} can not be found `)
@@ -138,11 +138,11 @@ export class MockEnvironment implements IEnvironment{
         return of(this.projectsDB[projectId])
     }
 
-    postProject(projectId:string, project: schemas.Project ) : Observable<void> {
+    postProject(projectId:string, project: ProjectSchema ) : Observable<void> {
         throw Error("MockEnvironment.postProject not implemented")
     }
 
-    getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
+    getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema> {
         throw Error("MockEnvironment.getLoadingGraph not implemented")
     }
 }

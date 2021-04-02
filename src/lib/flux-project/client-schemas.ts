@@ -1,5 +1,5 @@
 
-export interface DescriptionBox{
+export interface DescriptionBoxSchema{
 
     descriptionBoxId: string
     descriptionHtml: string
@@ -10,85 +10,85 @@ export interface DescriptionBox{
     }
 }
 
-export interface ModuleView{
+export interface ModuleViewSchema{
 
     moduleId: string
     xWorld: number
     yWorld: number
 }
 
-export interface ConnectionView{
+export interface ConnectionViewSchema{
 
     connectionId: string
     wireless: boolean
 }
 
-export interface Module{
+export interface ModuleSchema{
 
     moduleId: string
     factoryId:  {module:string, pack:string}
     configuration: { title: string, description: string, data: {[key:string]: any} }
 }
 
-export interface Plugin extends Module {
+export interface PluginSchema extends ModuleSchema {
 
     parentModuleId: string
 }
 
-export interface Connection{
+export interface ConnectionSchema{
 
     start: { moduleId: string, slotId: string}
     end: { moduleId: string, slotId: string}
     adaptor?: { adaptorId: string, configuration: { title: string, description: string, data: {[key:string]: any} } }
 }
 
-export interface LayerTree{
+export interface LayerTreeSchema{
 
     layerId: string,
     moduleIds: Array<string>,
     title: string,
-    children: Array<LayerTree>
+    children: Array<LayerTreeSchema>
 }
 
-export interface Workflow{
+export interface WorkflowSchema{
 
-    modules:Array<Module>,
-    connections:Array<Connection>
-    plugins:Array<Plugin>,
-    rootLayerTree : LayerTree
+    modules:Array<ModuleSchema>,
+    connections:Array<ConnectionSchema>
+    plugins:Array<PluginSchema>,
+    rootLayerTree : LayerTreeSchema
 }
 
-export interface LoadingGraph{
+export interface LoadingGraphSchema{
 
     definition: Array<Array<[string,string]>>
     graphType: string
     lock: Array<{name:string, version: string, id: string}>
 }
 
-export interface Requirements{
+export interface RequirementsSchema{
     fluxComponents: Array<string>
     fluxPacks: Array<string>
     libraries: {[key:string]: string}
-    loadingGraph: LoadingGraph
+    loadingGraph: LoadingGraphSchema
 }
 
-export interface BuilderRendering{
-    descriptionsBoxes: Array<DescriptionBox>,
-    modulesView:Array<ModuleView>,
-    connectionsView:Array<ConnectionView>
+export interface BuilderRenderingSchema{
+    descriptionsBoxes: Array<DescriptionBoxSchema>,
+    modulesView:Array<ModuleViewSchema>,
+    connectionsView:Array<ConnectionViewSchema>
 }
 
-export interface RunnerRendering{
+export interface RunnerRenderingSchema{
     layout: string,
     style: string
 }
 
-export interface Project{
+export interface ProjectSchema{
 
     name: string
     description: string
-    runnerRendering: RunnerRendering,
-    builderRendering: BuilderRendering,
-    requirements: Requirements,
-    workflow: Workflow
+    runnerRendering: RunnerRenderingSchema,
+    builderRendering: BuilderRenderingSchema,
+    requirements: RequirementsSchema,
+    workflow: WorkflowSchema
 }
