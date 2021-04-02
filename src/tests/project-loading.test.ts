@@ -11,50 +11,7 @@ import { Project } from "../lib/flux-project/core-models"
 import '../lib/modules/group.module'
 import { testPack } from "./test-modules"
 
-/*
-export class MockEnvironment implements IEnvironment{
 
-    static css = new Array<HTMLLinkElement>()
-    static jsAddons = new Array<string>()
-
-    fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>{
-
-        resources = Array.isArray(resources) ? resources : [resources]
-        let links = resources.map( r => {
-            let link = new HTMLLinkElement()
-            link.href = r 
-            return link
-        })
-        MockEnvironment.css = [...MockEnvironment.css, ...links]
-        return of(links)
-    }
-
-    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>{
-
-        resources = Array.isArray(resources) ? resources : [resources]
-        MockEnvironment.jsAddons = [...MockEnvironment.jsAddons, ...resources]
-        return of(resources)
-    }
-
-    fetchLoadingGraph(loadingGraph: schemas.LoadingGraph) : Observable<schemas.LoadingGraph>{
-        window['flux-test'] = {
-            pack:testPack
-        }
-        return of(loadingGraph)
-    }
-
-    getProject(projectId) : Observable<schemas.Project>{
-        return of(mockProjectsDB[projectId])
-    }
-
-    postProject(projectId:string, project: schemas.Project ) : Observable<void> {
-        throw Error("MockEnvironment.postProject not implemented")
-    }
-
-    getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<schemas.LoadingGraph> {
-        throw Error("MockEnvironment.getLoadingGraph not implemented")
-    }
-}*/
 let environment = new MockEnvironment(mockProjectsDB as any, [testPack])
 
 
