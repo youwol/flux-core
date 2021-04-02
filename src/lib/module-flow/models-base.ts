@@ -4,7 +4,7 @@ import { filter, map } from 'rxjs/operators';
 import { getAssetId, getUrlBase } from '@youwol/cdn-client'
 
 import { genericModulePlot, getTransforms } from './drawer-builder';
-import { Contract, IExpectation } from './contract';
+import { Contract, ContractUnfulfilledError, IExpectation } from './contract';
 import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
 import { Context, ErrorLog, Log } from './context';
@@ -280,12 +280,12 @@ export abstract class ModuleFlow {
         let contract : Contract = inputSlot.schema.contract
 
         let resolution = context.withChild( 
-            'contract resolution' , 
+            'resolve contract' , 
             (ctx) => {
                 let resolution = contract.resolve(adaptedInput.data)
                 ctx.expectation('resolved expectations', resolution)
                 if(!resolution.succeeded)
-                    throw Error(`The input's contract of the input '${slotId}' has not been fullfiled.`)
+                    throw new ContractUnfulfilledError(`The input's contract of the input '${slotId}' has not been fullfiled.`, resolution)
                 return resolution
             }
         )

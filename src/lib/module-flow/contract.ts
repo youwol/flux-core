@@ -8,6 +8,7 @@ export class ExpectationStatus<T>{
         public readonly succeeded: boolean,
         public readonly value: T ){}
 }
+
 export class FullfiledExpectation<T> extends ExpectationStatus<T>{
 
     constructor( 
@@ -53,12 +54,14 @@ export class BaseExpectation<T> implements IExpectation<T> {
 
     constructor(
         public readonly description: string, 
-        public readonly when:  BaseExpectation<T>,
+        public readonly when:  BaseExpectation<T> | ((inputData) => boolean),
         public readonly mapTo: (accData: any) => T = (d) => d ){
         }
 
     resolve(inputData: any) : ExpectationStatus<T> {
-        let {succeeded, value } = this.when.resolve(inputData)
+        let {succeeded, value } = this.when instanceof BaseExpectation
+            ? this.when.resolve(inputData)
+            : {succeeded:this.when(inputData), value: inputData}
         return succeeded 
             ? new FullfiledExpectation(this, this.mapTo(value))
             : new RejectedExpectation(this)
@@ -66,12 +69,13 @@ export class BaseExpectation<T> implements IExpectation<T> {
 }
 
 
-export class Of<T> implements IExpectation<T> {
+export class Of<T> extends BaseExpectation<T> {
 
     constructor(
         public readonly description: string, 
         public readonly when:  (inputData: any) => boolean,
         public readonly mapTo: (leafData: any) => T = leafData => leafData ){
+            super(description, when, mapTo)
         }
 
     resolve(inputData: any) : ExpectationStatus<T> {
@@ -360,9 +364,21 @@ export class FreeContract implements IExpectation<unknown>{
     }
 }
 
+export class ContractUnfulfilledError extends Error{
 
-export function contract({description, requireds, optionals}: 
-    {description: string, requireds: { [key:string]:IExpectation<unknown>}, optionals?: { [key:string]:IExpectation<unknown>}}
+    constructor(message: string, public readonly status: ExpectationStatus<unknown>){
+        super(message)
+    }
+}
+
+
+export function contract(
+    {description, requireds, optionals}: 
+    {
+        description: string, 
+        requireds: { [key:string]:IExpectation<unknown>}, 
+        optionals?: { [key:string]:IExpectation<unknown>}
+    }
     ): Contract  {
 
     return new Contract(description,requireds, optionals)
