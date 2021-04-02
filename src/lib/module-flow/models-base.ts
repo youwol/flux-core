@@ -8,6 +8,7 @@ import { Contract, IExpectation } from './contract';
 import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
 import { Context, ErrorLog, Log } from './context';
+import { UnconsistentConfiguration, mergeConfiguration, ConfigurationError } from './configuration-validation';
 
 export type Pipe<T> = Subject<{ data: T, context?: Context, configuration?: unknown }>
 
@@ -96,7 +97,7 @@ export class FluxPack{
     public readonly urlCDN: string
 
     /**
-     *  This attributes stores the module's factory, it is pospulated when the decorator
+     *  This attributes stores the module's factory, it is populated when the decorator
      *  '@Flux' is hitted by the compiler
      */
     private modules : {[key:string]: Factory} = {} // Module's factory id => Factory
@@ -209,7 +210,7 @@ export abstract class ModuleFlow {
                 this.log("send output", { data, context, this: this })
                 return { 
                     data, 
-                    configuration: configuration ? configuration :{}, 
+                    configuration: configuration, 
                     context: context ? context.userContext : {}
                 }
             })
@@ -252,9 +253,16 @@ export abstract class ModuleFlow {
         let conf = this.configuration.data
 
         if (adaptedInput.configuration) {
-            conf = _.cloneDeep(conf)
-            _.mergeWith(conf, adaptedInput.configuration)
-            context.info("Merged configuration with adaptor configuration's attributes", conf)
+            conf = context.withChild(
+                "merge configuration" ,
+                (ctx: Context) => {
+                    let status = mergeConfiguration(conf, adaptedInput.configuration)
+
+                    if(status instanceof UnconsistentConfiguration)
+                        throw new ConfigurationError("Failed to merge default configuration with dynamic attributes", status)
+
+                    return status.result
+            })
         }
         
         this.log("processInput", {

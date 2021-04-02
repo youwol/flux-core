@@ -1,22 +1,47 @@
 import { flattenSchemaWithValue } from "./decorators"
 import * as _ from 'lodash'
 
-export enum StatusEnum{
-    Error = "Error",
-    Warning="Warning",
-    Consistent = "Consistent"
-}
 
-export class ConfigurationStatus{
+export class ConfigurationStatus<T>{
 
-    constructor( 
-        public readonly status: StatusEnum, 
-        public readonly intrus: Array<string>,
-        public readonly missings: Array<string>,
-        public readonly typeErrors: Array<{attributeName:string, actualValue: string, expectedType: string, error: string}>
+    constructor(
+        public readonly original: T, 
+        public readonly newAttributes, 
+        public readonly result: T, 
+        public readonly intrus: Array<string> = []
         ){}
 }
 
+export class ConsistentConfiguration<T> extends ConfigurationStatus<T>{
+
+    constructor( 
+        original: T, 
+        newAttributes,
+        result: T,
+        intrus: Array<string> = []){
+            super(original, newAttributes, result, intrus)
+        }
+}
+
+export class UnconsistentConfiguration<T> extends ConfigurationStatus<T>{
+
+    constructor( 
+        original: T, 
+        newAttributes,
+        result: T, 
+        intrus: Array<string>,
+        public readonly missings: Array<string>,
+        public readonly typeErrors: Array<{attributeName:string, actualValue: string, expectedType: string, error: string}>){
+            super(original, newAttributes, result, intrus)
+        }
+}
+
+export class ConfigurationError extends Error{
+
+    constructor(message:string, public readonly status:UnconsistentConfiguration<any>){
+        super(message)
+    }
+}
 
 export function findIntrus( prefix, object, reference) : Array<string> {
 
@@ -67,18 +92,18 @@ export function typeErrors(flattened): Array<{attributeName:string, actualValue:
 }
 
 
-export function configurationStatus<T extends Object>(
+export function mergeConfiguration<T extends Object>(
     persistentData: T, 
-    newConfig?: {[key:string]: unknown},
-    ){
+    newAttributes?: {[key:string]: unknown},
+    ): ConfigurationStatus<T>{
 
-    if(!newConfig)
-        return new ConfigurationStatus(StatusEnum.Consistent, [], [], [])
+    if(!newAttributes || Object.keys(newAttributes).length==0)
+        return new ConsistentConfiguration<T>(persistentData, {}, persistentData)
 
     let mergedConfig = _.cloneDeep(persistentData)
-    _.mergeWith(mergedConfig, newConfig)
+    _.mergeWith(mergedConfig, newAttributes)
 
-    let newConfigWithSchema =  _.cloneDeep(newConfig)
+    let newConfigWithSchema =  _.cloneDeep(newAttributes)
     newConfigWithSchema.__proto__ = Object.getPrototypeOf(persistentData)
         
     let flattenedMerged = flattenSchemaWithValue(mergedConfig)
@@ -91,7 +116,7 @@ export function configurationStatus<T extends Object>(
     let errorsTypeNew = typeErrors(flattenedNew)
     */
     if( errorsType.length + missings.length )
-        return new ConfigurationStatus(StatusEnum.Error, intrus, missings, errorsType)
+        return new UnconsistentConfiguration(persistentData, newAttributes, mergedConfig, intrus, missings, errorsType)
     
     let nonCodeIntrus = intrus.filter( (intru:string) => {
         let key = intru.split('/')[1]
@@ -101,10 +126,9 @@ export function configurationStatus<T extends Object>(
         return metadata.type!="code"
     })
 
-    if(nonCodeIntrus.length>0){
-        return new ConfigurationStatus(StatusEnum.Warning, intrus, missings, errorsType)
-    }
+    if(nonCodeIntrus.length>0)
+        return new ConsistentConfiguration<T>(persistentData, newAttributes,mergedConfig, intrus)
     
-    return new ConfigurationStatus(StatusEnum.Consistent, intrus, missings, errorsType)
+    return new ConsistentConfiguration<T>(persistentData, newAttributes,mergedConfig)
 }
 
