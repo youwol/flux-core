@@ -32,7 +32,11 @@ module.exports = {
             root:['rxjs','operators']
         },
         '@youwol/cdn-client': '@youwol/cdn-client',
-        "lodash": "_"
+        "lodash": {
+            commonjs: "lodash",
+            commonjs2: "lodash",
+            root:"_"
+        }
     }],
     module: {
         rules: [
