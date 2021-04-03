@@ -21,6 +21,7 @@ export function retrieveData<T>( data: Array<any> , testers : Array< (d) => bool
 function instantiateModule(moduleId, args){
     let Factory = undefined
     let configuration = undefined
+    
     if(args.length==undefined){
         Factory = args
         configuration = new Factory.Configuration()
@@ -36,6 +37,9 @@ function instantiateModule(moduleId, args){
             additionalData["workflowGetter"] = data.workflowGetter 
             additionalData["layerId"] = data.layerId 
         }
+    }
+    if(!Factory){
+        throw Error(`can not get the factory for ${moduleId}, ${args}`)
     }
     let m = new Factory.Module( Object.assign({},{moduleId, configuration, Factory},additionalData))
     return m
