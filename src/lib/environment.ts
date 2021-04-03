@@ -90,7 +90,7 @@ export class Environment implements IEnvironment{
 
 export class MockEnvironment implements IEnvironment{
 
-    static css = new Array<HTMLLinkElement>()
+    static css = new Array<string>()
     static jsAddons = new Array<string>()
 
     public readonly fluxPacksDB: {[key:string]: FluxPack}
@@ -105,13 +105,8 @@ export class MockEnvironment implements IEnvironment{
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>{
 
         resources = Array.isArray(resources) ? resources : [resources]
-        let links = resources.map( r => {
-            let link = new HTMLLinkElement()
-            link.href = r 
-            return link
-        })
-        MockEnvironment.css = [...MockEnvironment.css, ...links]
-        return of(links)
+        MockEnvironment.css = [...MockEnvironment.css, ...resources]
+        return of(resources as unknown as Array<HTMLLinkElement>)
     }
 
     fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>{
