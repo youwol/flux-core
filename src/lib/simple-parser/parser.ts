@@ -1,7 +1,8 @@
 import { Graph } from './graph';
 import { Branch , Step} from './branch';
-import { ModuleFlow , Factory, Connection} from '../module-flow/models-base';
+import { ModuleFlow , Factory, Connection, PluginFlow} from '../module-flow/models-base';
 import { LayerTree } from '../flux-project/core-models';
+import { IEnvironment } from '../environment';
 
 
 type Namespace = any
@@ -18,16 +19,21 @@ export function retrieveData<T>( data: Array<any> , testers : Array< (d) => bool
 }
 
 
-function instantiateModule(moduleId, args){
-    let Factory = undefined
+function instantiateModule(
+    moduleId : string, 
+    args : Factory | [Factory, {[key:string]: any}], 
+    commonMdleArgs: {environment?: IEnvironment}
+    ): ModuleFlow{
+
+    let Factory = undefined 
     let configuration = undefined
     
-    if(args.length==undefined){
+    if( !Array.isArray(args)){
         Factory = args
         configuration = new Factory.Configuration()
     }   
-    let additionalData = {}
-    if(args.length && args.length==2){
+    let additionalData = commonMdleArgs
+    if( Array.isArray(args) && args.length && args.length==2 ){
         Factory = args[0]
         let configuration_default =new Factory.Configuration()
         let data = Object.assign(configuration_default.data,args[1] )
@@ -41,23 +47,32 @@ function instantiateModule(moduleId, args){
     if(!Factory){
         throw Error(`can not get the factory for ${moduleId}, ${args}`)
     }
-    let m = new Factory.Module( Object.assign({},{moduleId, configuration, Factory},additionalData))
-    return m
+
+    let mdle = new Factory.Module( Object.assign({},{moduleId, configuration, Factory},additionalData))
+    return mdle
 }
 
-function instantiatePlugin(moduleId, args){
+function instantiatePlugin(
+    moduleId : string, 
+    args, 
+    commonMdleArgs: {environment?: IEnvironment} = {}
+    ) : PluginFlow<unknown>{
+        
     if(args.length==undefined)
         throw Error("Parent module is needed to instantiate a plugin")
     
     let [factory,parentModule,configData] = retrieveData<[Factory,ModuleFlow,Object]>(args, [(d)=>d.Module,(d)=>d instanceof ModuleFlow, ()=>true])
     let configuration = new factory.Configuration({data: new factory.PersistentData(configData || {} )})
-    let plugin = new factory.Module( {moduleId, configuration, Factory:factory, parentModule})
+
+    let mdleArguments = Object.assign({},{moduleId, configuration, Factory:factory, parentModule},commonMdleArgs)
+
+    let plugin = new factory.Module(mdleArguments)
     return plugin
 }
 
-function instantiate(entities, createFct) {
+function instantiate(entities, createFct, commonMdleArgs: {environment?: IEnvironment}  = {}) {
     let modules = Object.entries(entities).map( 
-        ([moduleId, args] : [string, Namespace | [Namespace,Config]]) => createFct(moduleId, args )
+        ([moduleId, args] : [string, Namespace | [Namespace,Config]]) => createFct(moduleId, args, commonMdleArgs )
     )
     return modules.reduce( (acc,e) => {
         acc[e.moduleId] = e
@@ -65,12 +80,12 @@ function instantiate(entities, createFct) {
     }, {})
 }
 
-export function instantiateModules( modulesInputs: Object ) {
-    return instantiate(modulesInputs,  instantiateModule )
+export function instantiateModules( modulesInputs: Object , mdleArgs: {environment?: IEnvironment}  = {}) {
+    return instantiate(modulesInputs,  instantiateModule, mdleArgs )
 }
 
-export function instantiatePlugins( pluginsInputs: Object ) {
-    return instantiate(pluginsInputs,  instantiatePlugin )
+export function instantiatePlugins( pluginsInputs: Object , mdleArgs: {environment?: IEnvironment}  = {}) {
+    return instantiate(pluginsInputs,  instantiatePlugin, mdleArgs )
 }
 
 /* Return the list of observers in the connection
