@@ -42,7 +42,7 @@ test("simple component with label display", (done) =>{
         expect(templateDiv.children.length).toEqual(1)
         let componentDiv = div.querySelector("#component")
         expect(componentDiv).toBeDefined()
-        expect(componentDiv.innerHTML).toEqual("<label> result: </label><div id=\"label\"><div><label>1</label></div></div>")
+        expect(componentDiv.innerHTML).toEqual("<label> result: </label><div id=\"label\" class=\"flux-element\"><div><label>1</label></div></div>")
         let label = componentDiv.querySelector("#label label")
         expect(label.innerHTML).toEqual("1")
         done()
