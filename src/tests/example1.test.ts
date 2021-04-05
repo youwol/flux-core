@@ -6,13 +6,11 @@ import { FluxPack, ModuleFlow, Pipe } from '../lib/module-flow/models-base'
 import { instantiateModules, parseGraph } from '../lib/simple-parser/parser'
 import { Runner } from '../lib/simple-parser/runner'
 import { attr$, render } from "@youwol/flux-view"
-import { Console, DataEmitor } from './test-modules'
-import { Subject } from 'rxjs'
 import { renderTemplate } from '../lib/module-flow/render-html'
-import { delay, filter, map, skip, take } from 'rxjs/operators'
+import { filter, map, skip, take } from 'rxjs/operators'
 import { ConfigurationError } from '..'
-import { UnconsistentConfiguration } from '../lib/module-flow/configuration-validation'
-
+import { ModuleDataEmittor } from '../lib/modules/test-modules'
+console.log = () => {}
 /*
 In this example we define a module that does operation on two numbers, either addition or multiplication.
 It features one input that is expected to contains two numbers (implicit, this is explained latter)
@@ -216,11 +214,11 @@ export namespace MyModule{
 test('valid inputs', (done) => {
     
     let branches = [
-        '--|~dataEmitor~|---|~myModule~|--'
+        '--|~dataEmittor~|---|~myModule~|--'
     ] 
 
     let modules     = instantiateModules({
-        dataEmitor: DataEmitor,
+        dataEmittor: ModuleDataEmittor,
         myModule: MyModule
     }) 
     
@@ -244,7 +242,7 @@ test('valid inputs', (done) => {
     /**
      * Scenario 1: straight emission of two numbers, no configuration overloading (by default operationType is Operations.ADDITION)
      */
-    modules.dataEmitor.emit({data:[5, 10]})
+    modules.dataEmittor.emit({data:[5, 10]})
 
     modules.myModule.result$.pipe(
         take(1)
@@ -262,7 +260,7 @@ test('valid inputs', (done) => {
          * By sending a 'configuration', myModule's configuration will be dynamically updated
          * with the attributes provided.
          */
-        modules.dataEmitor.emit({data:[5, 6], configuration:{operationType:MyModule.Operations.MULTIPLICATION}}) 
+        modules.dataEmittor.emit({data:[5, 6], configuration:{operationType:MyModule.Operations.MULTIPLICATION}}) 
     })
     
     modules.myModule.result$.pipe(
@@ -278,7 +276,7 @@ test('valid inputs', (done) => {
         /**
          * Scenario 3: emission of two numbers including an 'indirect' one, configuration overloaded to Operations.MULTIPLICATION
         */
-        modules.dataEmitor.emit({data:[{value:5}, 4], configuration:{operationType:MyModule.Operations.MULTIPLICATION}})
+        modules.dataEmittor.emit({data:[{value:5}, 4], configuration:{operationType:MyModule.Operations.MULTIPLICATION}})
     })
 
     modules.myModule.result$.pipe(
@@ -301,11 +299,11 @@ test('valid inputs', (done) => {
 test('invalid data', (done) => {
     
     let branches = [
-        '--|~dataEmitor~|---|~myModule~|--'
+        '--|~dataEmittor~|---|~myModule~|--'
     ] 
 
     let modules = instantiateModules({
-        dataEmitor: DataEmitor,
+        dataEmittor: ModuleDataEmittor,
         myModule: MyModule
     }) 
     
@@ -315,7 +313,7 @@ test('invalid data', (done) => {
     /**
      * module's input contract has not been designed to recognized 'five' as number
      */
-    modules.dataEmitor.emit({data:['five', 10]})
+    modules.dataEmittor.emit({data:['five', 10]})
 
     modules.myModule.logs$.pipe( 
         filter(log => log instanceof ErrorLog),
@@ -335,11 +333,11 @@ test('invalid data', (done) => {
 test('invalid configuration', (done) => {
     
     let branches = [
-        '--|~dataEmitor~|---|~myModule~|--'
+        '--|~dataEmittor~|---|~myModule~|--'
     ] 
 
     let modules = instantiateModules({
-        dataEmitor: DataEmitor,
+        dataEmittor: ModuleDataEmittor,
         myModule: MyModule
     }) 
     
@@ -351,7 +349,7 @@ test('invalid configuration', (done) => {
      * with the attributes provided (here one : 'operationType').
      * Here an error is inroduced: PersistentData.operationType can not take value 'division'
      */
-    modules.dataEmitor.emit({data:[5, 10], configuration:{operationType:'division'}})
+    modules.dataEmittor.emit({data:[5, 10], configuration:{operationType:'division'}})
 
     modules.myModule.logs$.pipe( 
         filter(log => log instanceof ErrorLog),

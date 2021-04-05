@@ -3,13 +3,8 @@ import { Subject, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { freeContract } from "../lib/module-flow/contract";
 import { Context } from "../lib/module-flow/context";
-import { FluxPack } from "../lib/module-flow/models-base";
+import { testPack } from "../lib/modules/test-modules";
 
-export let testPack = new FluxPack({
-    name:'flux-test',
-    description: 'flux pack to test',
-    version: '0.0.0'
-});
 
 console.log = () =>{}
 export namespace Schemas{
@@ -363,40 +358,3 @@ export namespace Label{
     }
 }
 
-
-/**
- */
- export namespace DataEmitor{
-
-    @Schema({
-        pack: testPack
-    })
-    export class PersistentData {
-        constructor() {}
-    }
-
-    @Flux({ 
-        pack: testPack, 
-        namespace: DataEmitor, 
-        id: "DataEmitor", 
-        displayName: "DataEmitor",
-         description: "Label"
-    })
-    @BuilderView({ 
-        namespace: DataEmitor, 
-        icon: ""
-    })
-    export class Module extends ModuleFlow {
-        
-        output$ : Pipe<unknown>
-
-        constructor( params ){
-            super(params) 
-            this.output$ = this.addOutput({id:"value"})
-        }
-
-        emit( data: any ) {   
-            this.output$.next(data)
-        }
-    }
-}

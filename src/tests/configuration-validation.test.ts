@@ -1,6 +1,7 @@
 import { ConsistentConfiguration, mergeConfiguration, UnconsistentConfiguration } from "../lib/module-flow/configuration-validation"
 import { Property, Schema } from "../lib/module-flow/decorators"
-import { testPack } from "./test-modules"
+import { testPack } from "../lib/modules/test-modules"
+
 
 
 @Schema({

@@ -1,16 +1,13 @@
-import { Observable, of, Subscription } from "rxjs"
-import * as schemas from '../lib/flux-project/client-schemas'
-import { IEnvironment, MockEnvironment } from "../lib/environment"
-import { BuilderView, Flux, Property, RenderView, Schema } from "../lib/module-flow/decorators"
-import { Connection, FluxPack, ModuleFlow, Pipe, PluginFlow } from "../lib/module-flow/models-base"
-import { freeContract } from "../lib/module-flow/contract"
+import { Subscription } from "rxjs"
+import { MockEnvironment } from "../lib/environment"
+import { Connection } from "../lib/module-flow/models-base"
 import { mockProjectsDB } from "./data/projects-data"
 import { loadProjectDatabase$ } from "../lib/flux-project/loaders"
 import { Project } from "../lib/flux-project/core-models"
 
 import '../lib/modules/group.module'
-import { testPack } from "./test-modules"
-
+import { testPack } from "../lib/modules/test-modules"
+import './test-modules'
 
 let environment = new MockEnvironment(mockProjectsDB as any, [testPack])
 
