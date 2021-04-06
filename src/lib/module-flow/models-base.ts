@@ -162,10 +162,10 @@ export abstract class ModuleFlow {
     public readonly logs$ = new ReplaySubject<Log>(1)
     public readonly notifier$ = new ReplaySubject(1)
 
-    constructor({ moduleId, configuration, Factory, cache, logger, environment, helpers }:
+    constructor({ moduleId, configuration, Factory, cache, environment, helpers }:
         {
             moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
-            Factory: Factory, cache?: Cache, logger?: any, helpers?: {[key:string]: any}
+            Factory: Factory, cache?: Cache, helpers?: {[key:string]: any}
         }
     ) {
         this.environment = environment
@@ -174,7 +174,6 @@ export abstract class ModuleFlow {
         this.Factory = Factory
         this.helpers = helpers ? helpers : {}
         this.cache = cache ? cache : new Cache()
-        this.logger = logger ? logger : { debug: (title, message, object, mdle) => console.log(title, message, object) }
         this.logs$.pipe(
             filter( log => log instanceof ErrorLog )
         ).subscribe( (errorLog: ErrorLog)  => {
@@ -187,7 +186,7 @@ export abstract class ModuleFlow {
     }
 
     log(message, data) {
-        this.logger && this.logger.debug(this.Factory.id, message, data, this)
+        this.environment.console && this.environment.console.log(this.Factory.id, message, data, this)
     }
 
     getConfiguration<T>() {

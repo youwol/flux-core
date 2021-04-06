@@ -61,15 +61,15 @@ export function loadProject$(
     project$: Observable<ProjectSchema>, 
     workflowGetter : ()=>Workflow, 
     subscriptionsStore: Map<Connection, any>, 
-    environment: IEnvironment, 
-    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+    environment: IEnvironment
+    ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
 
     let projectData$ = project$.pipe(
         mergeMap( (project: ProjectSchema) => {
             return loadProjectDependencies$(project, environment) 
         }),
         map(({ project, packages }) => {
-            return createProject(project, packages, workflowGetter, subscriptionsStore, environment, logger)
+            return createProject(project, packages, workflowGetter, subscriptionsStore, environment)
         })
     )
     return projectData$
@@ -80,10 +80,10 @@ export function loadProjectDatabase$(
     projectId: string, 
     workflowGetter : ()=>Workflow, 
     subscriptionsStore: Map<Connection,Subscription>, 
-    environment: IEnvironment, 
-    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}>{
+    environment: IEnvironment
+    ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}>{
 
-    return loadProject$(environment.getProject(projectId), workflowGetter, subscriptionsStore, environment, logger)
+    return loadProject$(environment.getProject(projectId), workflowGetter, subscriptionsStore, environment)
 }
 
 
@@ -91,11 +91,11 @@ export function loadProjectURI$(
     projectURI: string, 
     workflowGetter : ()=>Workflow, 
     subscriptionsStore:  Map<Connection,Subscription>, 
-    environment: IEnvironment, 
-    logger ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+    environment: IEnvironment
+    ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
 
     let project = JSON.parse(decodeURIComponent(projectURI)) as ProjectSchema
-    return loadProject$( of(project), workflowGetter, subscriptionsStore, environment, logger)
+    return loadProject$( of(project), workflowGetter, subscriptionsStore, environment)
 }
 
 
@@ -104,8 +104,7 @@ export function createProject(
     packs,
     workflowGetter : ()=>Workflow, 
     subscriptionsStore: Map<Connection,Subscription>, 
-    environment: IEnvironment, 
-    logger
+    environment: IEnvironment
     ): {project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}{
 
     let packages = packs.map( p => p.pack)
@@ -128,8 +127,8 @@ export function createProject(
 
     modulesFactory = new Map(modulesFactory)
     let rootLayerTree = instantiateProjectLayerTree(project.workflow.rootLayerTree ) 
-    let modules = instantiateProjectModules(project.workflow.modules, modulesFactory, environment, workflowGetter, logger ) 
-    let plugins = instantiateProjectPlugins(project.workflow.plugins, modules, modulesFactory, logger) 
+    let modules = instantiateProjectModules(project.workflow.modules, modulesFactory, environment, workflowGetter) 
+    let plugins = instantiateProjectPlugins(project.workflow.plugins, modules, modulesFactory, environment) 
     let connections = instantiateProjectConnections(subscriptionsStore,project.workflow.connections, [...modules, ...plugins])
         
     let newProject = new Project( 
@@ -160,8 +159,7 @@ export function instantiateProjectModules(
     modulesData: Array< ModuleSchema>, 
     modulesFactory: Map<string, Factory>, 
     environment: IEnvironment, 
-    workflowGetter: () => Workflow, 
-    logger 
+    workflowGetter: () => Workflow
     ): Array<ModuleFlow>{
 
    let modules = modulesData
@@ -170,21 +168,21 @@ export function instantiateProjectModules(
        let Factory = modulesFactory.get(factoryKey)
        if(!Factory)
            throw Error(`Can not get factory ${factoryKey}`)
-       let conf    = new Factory.Configuration({title:         moduleData.configuration.title,
-                                                description:   moduleData.configuration.description,
-                                                data:          new Factory.PersistentData(moduleData.configuration.data)
-                                               })
+       let configuration    = new Factory.Configuration({
+           title: moduleData.configuration.title,               
+           description: moduleData.configuration.description,
+           data: new Factory.PersistentData(moduleData.configuration.data)
+        })
        let groupData = isGroupingModule(moduleData) 
             ? {  workflowGetter,  layerId:moduleData.moduleId.split(Factory.id+"_")[1]  }
             : {}
        let data = Object.assign({},
         {
-           moduleId:          moduleData.moduleId, 
-           configuration:     conf, 
-           Factory:           Factory,
-           workflowGetter:    workflowGetter, // only relevant for Groups
-           logger,
-           environment:       environment
+           moduleId: moduleData.moduleId, 
+           configuration, 
+           Factory,
+           workflowGetter, // only relevant for Groups
+           environment
         }, groupData
         )
        
@@ -198,8 +196,8 @@ export function instantiateProjectModules(
 export function instantiateProjectPlugins(
     pluginsData: Array<PluginSchema>, 
     modules: Array<ModuleFlow>, 
-    pluginsFactory:Map<string, Factory>, 
-    logger
+    pluginsFactory:Map<string, Factory>,
+    environment: IEnvironment
     ): Array<PluginFlow<unknown>>{
     
     let plugins = pluginsData.map( pluginData => {
@@ -212,17 +210,19 @@ export function instantiateProjectPlugins(
         if( Factory==undefined){
             console.error("Can not find factory ", pluginData)
         }
-        let conf    = new Factory.Configuration({title:         pluginData.configuration.title,
-                                                 description:   pluginData.configuration.description,
-                                                 data:          new Factory.PersistentData(pluginData.configuration.data)})
+        let configuration    = new Factory.Configuration({
+            title: pluginData.configuration.title,
+            description: pluginData.configuration.description,
+            data: new Factory.PersistentData(pluginData.configuration.data)
+        })
         
         let parentModule = modules.find( m => m.moduleId ===pluginData.parentModuleId )
         let mdle  = new Factory.Module(
             {parentModule:parentModule,
              moduleId:          pluginData.moduleId, 
-             configuration:     conf, 
-             Factory:           Factory,
-             logger:            logger} ) 
+             configuration, 
+             Factory,
+             environment} ) 
                         
         return mdle
     } )

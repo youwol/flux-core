@@ -15,7 +15,7 @@ let environment = new MockEnvironment(mockProjectsDB as any, [testPack])
 test('load empty project', (done) => {
 
     let subscriptionsStore = new  Map<Connection,Subscription>()
-    let project$ = loadProjectDatabase$('emptyProject', () => undefined,subscriptionsStore,environment, undefined)
+    let project$ = loadProjectDatabase$('emptyProject', () => undefined,subscriptionsStore,environment)
 
     project$.subscribe( ({project, packages, modulesFactory}:{project:Project, packages, modulesFactory}) => {
         expect(project.name).toEqual("emptyProject")
@@ -37,7 +37,7 @@ test('load empty project', (done) => {
 test('load simple project', (done) => {
 
     let subscriptionsStore = new  Map<Connection,Subscription>()
-    let project$ = loadProjectDatabase$('simpleProject', () => undefined,subscriptionsStore,environment, undefined)
+    let project$ = loadProjectDatabase$('simpleProject', () => undefined,subscriptionsStore,environment)
 
     project$.subscribe( ({project, packages, modulesFactory}:{project:Project, packages, modulesFactory}) => {
         expect(project.name).toEqual("simpleProject")
