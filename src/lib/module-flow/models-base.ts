@@ -10,7 +10,7 @@ import { Environment, IEnvironment } from '../environment';
 import { Context, ErrorLog, Log } from './context';
 import { UnconsistentConfiguration, mergeConfiguration, ConfigurationError } from './configuration-validation';
 
-export type Pipe<T> = Subject<{ data: T, context?: Context, configuration?: unknown }>
+export type Pipe<T> = Subject<{ data: T, context?: unknown, configuration?: unknown }>
 
 export function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -24,7 +24,7 @@ export class Slot {
     constructor(
         public readonly slotId: string,
         public readonly moduleId: string,
-        public readonly schema: any
+        public readonly metadata: any
     ) { }
 
 }
@@ -34,16 +34,27 @@ export class SlotRef {
 
 export class InputSlot extends Slot {
 
-    constructor(slotId: string, moduleId: string, schema: {description: string, contract: IExpectation<unknown>},
+    public readonly contract:  IExpectation<unknown>
+    public readonly description: string
+
+    constructor(slotId: string, moduleId: string, metadata: {description: string, contract: IExpectation<unknown>},
         public readonly subscribeFct) {
-        super(slotId, moduleId, schema)
+        super(slotId, moduleId, metadata)
+        
+        this.contract = metadata.contract
+        this.description = metadata.description
     }
 }
 
 export class OutputSlot<T> extends Slot {
 
-    constructor(slotId: string, moduleId: string, schema: any, public readonly observable$: Observable<T>) {
-        super(slotId, moduleId, schema)
+    constructor(
+        slotId: string, 
+        moduleId: string, 
+        metadata: any, 
+        public readonly observable$: Observable<{data:T, configuration: any, context: any}>
+        ) {
+        super(slotId, moduleId, metadata)
     }
 }
 
@@ -181,8 +192,16 @@ export abstract class ModuleFlow {
         })
     }
 
-    getSlot(slotId): Slot {
+    getSlot(slotId: string): Slot {
         return [...this.inputSlots, ...this.outputSlots].find((slot) => slot.slotId == slotId)
+    }
+
+    getInputSlot(slotId: string): InputSlot {
+        return this.inputSlots.find((slot) => slot.slotId == slotId)
+    }
+
+    getOutputSlot<T=unknown>(slotId: string): OutputSlot<{data:T, configuration:any, context: any}> {
+        return this.outputSlots.find((slot) => slot.slotId == slotId)
     }
 
     log(message, data) {
@@ -276,7 +295,7 @@ export abstract class ModuleFlow {
             this: this
         })
 
-        let contract : Contract = inputSlot.schema.contract
+        let contract = inputSlot.contract
 
         let resolution = context.withChild( 
             'resolve contract' , 
