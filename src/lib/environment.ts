@@ -18,13 +18,15 @@ export function createObservableFromFetch( request, extractFct = (d) =>d ){
     });
 }
 
+type IConsole = {
+    log:(message?: any, ...optionalParams: any[])=> void,
+    warn:(message?: any, ...optionalParams: any[])=> void,
+    error:(message?: any, ...optionalParams: any[])=> void,
+}
+
 export interface IEnvironment{
 
-    console: {
-        log:(message?: any, ...optionalParams: any[])=> void,
-        warn:(message?: any, ...optionalParams: any[])=> void,
-        error:(message?: any, ...optionalParams: any[])=> void,
-    }
+    console: IConsole
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
@@ -39,21 +41,15 @@ export interface IEnvironment{
     getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema>
 }
 
-
 export class Environment implements IEnvironment{
 
     executingWindow: Window
     renderingWindow: Window
 
-    console: {
-        log:(message?: any, ...optionalParams: any[])=> void,
-        warn:(message?: any, ...optionalParams: any[])=> void,
-        error:(message?: any, ...optionalParams: any[])=> void,
-    }
+    console: IConsole
 
     constructor( data:
-                {executingWindow: Window, renderingWindow: Window , console: Console },
-                console?){
+                {executingWindow: Window, renderingWindow: Window , console?: Console }){
 
         this.renderingWindow = data.renderingWindow
         this.executingWindow = data.executingWindow
