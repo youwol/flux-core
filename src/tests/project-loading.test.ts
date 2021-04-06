@@ -9,7 +9,10 @@ import '../lib/modules/group.module'
 import { testPack } from "../lib/modules/test-modules"
 import './test-modules'
 
-let environment = new MockEnvironment(mockProjectsDB as any, [testPack])
+let environment = new MockEnvironment({
+    projectsDB: mockProjectsDB as any, 
+    fluxPacks:[testPack]
+})
 
 
 test('load empty project', (done) => {

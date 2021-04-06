@@ -96,35 +96,47 @@ export class Environment implements IEnvironment{
     }
 }
 
+export type KeyLoadingGraphStore = {libraries:{[key:string]: string}, using:{[key:string]: string}}
 
 export class MockEnvironment implements IEnvironment{
 
-    static css = new Array<string>()
-    static jsAddons = new Array<string>()
+    css = new Array<string>()
+    jsAddons = new Array<string>()
+    savedProjects : {[key:string]: ProjectSchema} = {}
 
+    public readonly projectsDB: {[key:string]: ProjectSchema}
     public readonly fluxPacksDB: {[key:string]: FluxPack}
-
-    public console: Console
+    public readonly loadingGraphResponses: {[key:string]: LoadingGraphSchema}
+    public readonly console: IConsole
 
     constructor(
-        public readonly projectsDB: {[key:string]: ProjectSchema} = {},
-        fluxPacks: Array<FluxPack> = []){
-        
-        this.fluxPacksDB = fluxPacks.reduce((acc,e) => ({...acc, ...{[e.name]:e}}), {})
-        this.console = console
+        data: {
+            projectsDB?: {[key:string]: ProjectSchema},
+            fluxPacks?: Array<FluxPack>,
+            console?: IConsole,
+            loadingGraphResponses?: Array<[KeyLoadingGraphStore, LoadingGraphSchema]>
+        } = {}){
+        this.projectsDB = data.projectsDB || {}
+        this.fluxPacksDB = data.fluxPacks 
+            ? data.fluxPacks.reduce((acc,e) => ({...acc, ...{[e.name]:e}}), {}) 
+            : {}
+        this.loadingGraphResponses = data.loadingGraphResponses 
+            ? data.loadingGraphResponses.reduce((acc,[k,v]) => ({...acc, ...{[JSON.stringify(k)]:v}}), {}) 
+            : {} 
+        this.console = data.console || console
     }
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>{
 
         resources = Array.isArray(resources) ? resources : [resources]
-        MockEnvironment.css = [...MockEnvironment.css, ...resources]
+        this.css = [...this.css, ...resources]
         return of(resources as unknown as Array<HTMLLinkElement>)
     }
 
     fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>{
 
         resources = Array.isArray(resources) ? resources : [resources]
-        MockEnvironment.jsAddons = [...MockEnvironment.jsAddons, ...resources]
+        this.jsAddons = [...this.jsAddons, ...resources]
         return of(resources)
     }
 
@@ -146,10 +158,16 @@ export class MockEnvironment implements IEnvironment{
     }
 
     postProject(projectId:string, project: ProjectSchema ) : Observable<void> {
-        throw Error("MockEnvironment.postProject not implemented")
+        this.savedProjects[projectId] = project
+        return of()
     }
 
-    getLoadingGraph({libraries}: {libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema> {
-        throw Error("MockEnvironment.getLoadingGraph not implemented")
+    getLoadingGraph(body: KeyLoadingGraphStore) : Observable<LoadingGraphSchema> {
+
+        let key = JSON.stringify(body)
+        if(!this.loadingGraphResponses[key])
+            throw Error(`MockEnvironment.getLoadingGraph: loading graph not found for key: ${key}` )
+
+        return of(this.loadingGraphResponses[key])
     }
 }
