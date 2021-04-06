@@ -12,8 +12,8 @@
     "build": "yarn build:dev",
     "build:dev": "yarn autogen && webpack --mode development",
     "build:prod": "yarn autogen && webpack --mode production",
-    "test": "jest -c ./jest.config.js --rootDir .",
-    "test-coverage": "jest -c ./jest.config.js --rootDir . --collect-coverage --collectCoverageFrom=./src/lib/**/*.ts ",
+    "test": "jest -c ./jest.config.js --rootDir . -i",
+    "test-coverage": "jest -c ./jest.config.js --rootDir . -i --collect-coverage --collectCoverageFrom=./src/lib/**/*.ts ",
     "doc": "typedoc src/ --exclude src/index.ts --exclude src/tests --out dist/docs --theme default",
     "publish-npm-public": "yarn build:prod && yarn test-coverage && yarn publish --access public"
   },
