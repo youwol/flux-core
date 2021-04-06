@@ -20,6 +20,11 @@ export function createObservableFromFetch( request, extractFct = (d) =>d ){
 
 export interface IEnvironment{
 
+    console: {
+        log:(message?: any, ...optionalParams: any[])=> void,
+        warn:(message?: any, ...optionalParams: any[])=> void,
+        error:(message?: any, ...optionalParams: any[])=> void,
+    }
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
@@ -40,11 +45,19 @@ export class Environment implements IEnvironment{
     executingWindow: Window
     renderingWindow: Window
 
-    constructor({executingWindow, renderingWindow, backend }:
-                {executingWindow: Window, renderingWindow: Window , backend: any }){
+    console: {
+        log:(message?: any, ...optionalParams: any[])=> void,
+        warn:(message?: any, ...optionalParams: any[])=> void,
+        error:(message?: any, ...optionalParams: any[])=> void,
+    }
 
-        this.renderingWindow=renderingWindow
-        this.executingWindow=executingWindow
+    constructor( data:
+                {executingWindow: Window, renderingWindow: Window , console: Console },
+                console?){
+
+        this.renderingWindow = data.renderingWindow
+        this.executingWindow = data.executingWindow
+        this.console = data.console || console
     }
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>{
@@ -95,11 +108,14 @@ export class MockEnvironment implements IEnvironment{
 
     public readonly fluxPacksDB: {[key:string]: FluxPack}
 
+    public console: Console
+
     constructor(
-        public readonly projectsDB: {[key:string]: ProjectSchema},
-        fluxPacks: Array<FluxPack>){
+        public readonly projectsDB: {[key:string]: ProjectSchema} = {},
+        fluxPacks: Array<FluxPack> = []){
         
         this.fluxPacksDB = fluxPacks.reduce((acc,e) => ({...acc, ...{[e.name]:e}}), {})
+        this.console = console
     }
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>{
