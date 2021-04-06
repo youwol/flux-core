@@ -2,7 +2,7 @@ import { Graph } from './graph';
 import { Branch , Step} from './branch';
 import { ModuleFlow , Factory, Connection, PluginFlow} from '../module-flow/models-base';
 import { LayerTree } from '../flux-project/core-models';
-import { IEnvironment } from '../environment';
+import { IEnvironment, MockEnvironment } from '../environment';
 
 
 type Namespace = any
@@ -71,6 +71,10 @@ function instantiatePlugin(
 }
 
 function instantiate(entities, createFct, commonMdleArgs: {environment?: IEnvironment}  = {}) {
+
+    if(!commonMdleArgs.environment)
+        commonMdleArgs.environment = new MockEnvironment()
+        
     let modules = Object.entries(entities).map( 
         ([moduleId, args] : [string, Namespace | [Namespace,Config]]) => createFct(moduleId, args, commonMdleArgs )
     )
