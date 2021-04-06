@@ -62,7 +62,7 @@ export interface LoadingGraphSchema{
 
     definition: Array<Array<[string,string]>>
     graphType: string
-    lock: Array<{name:string, version: string, id: string}>
+    lock: Array<{name:string, version: string, id: string, type: string}>
 }
 
 export interface RequirementsSchema{
