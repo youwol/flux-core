@@ -111,7 +111,7 @@ export class FluxPack{
      *  This attributes stores the module's factory, it is populated when the decorator
      *  '@Flux' is hitted by the compiler
      */
-    private modules : {[key:string]: Factory} = {} // Module's factory id => Factory
+     public readonly modules : {[key:string]: Factory} = {} // Module's factory id => Factory
 
     constructor(
         {
