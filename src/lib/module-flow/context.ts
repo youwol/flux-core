@@ -1,42 +1,35 @@
-import { ReplaySubject } from "rxjs"
+import { ReplaySubject, Subject } from "rxjs"
 import { ExpectationStatus } from "./contract"
 import * as _ from 'lodash'
+import { uuidv4 } from "./models-base"
 
 export class Log{
 
-    public readonly timestamp = Date.now()
+    public readonly timestamp = performance.now()
+    public readonly id = uuidv4()
 
-    constructor(public readonly text:string){
+    constructor(
+        public readonly context:Context,
+        public readonly text:string,
+        public readonly data: unknown){
     }
 }
 
-export class ErrorLog extends Log{
-    constructor(public readonly error: Error, public readonly data: unknown,){
-        super(error.message)
+export class ErrorLog<TError extends Error = any, TData=unknown> extends Log{
+    constructor(context:Context, public readonly error: TError, data: TData,){
+        super(context, error.message, data)
     }
 }
 
 export class WarningLog extends Log{
-    constructor(public readonly text: string, public readonly data: unknown){
-        super(text)
+    constructor(context:Context, public readonly text: string, data: unknown){
+        super(context, text, data)
     }
 }
 
 export class InfoLog extends Log{
-    constructor(public readonly text: string, public readonly data: unknown){
-        super(text)
-    }
-}
-
-export class ExpectationLog extends Log{
-    constructor(public readonly text: string, public readonly status: ExpectationStatus<unknown>){
-        super(text)
-    }
-}
-
-export class OutputLog extends Log{
-    constructor(public readonly text: string, public readonly data: unknown){
-        super(text)
+    constructor(context:Context, public readonly text: string, data: unknown){
+        super(context, text, data)
     }
 }
 
@@ -45,11 +38,12 @@ export class CustomLog<T> extends Log{
 
 
     constructor(
-        public readonly text: string, 
-        public readonly data: T,
+        context:Context,
+        text: string, 
+        data: T,
         public readonly divCreator : (d:T) => HTMLDivElement 
         ){
-        super(text)
+        super(context, text, data)
     }
 }
 
@@ -83,10 +77,10 @@ export class LogChannel<T=unknown>{
 
 export class Context{
 
-    children = new Array<Context>()
-    logs = new Array<Log>()
+    children = new Array<Context | Log>()
+    id = uuidv4()
 
-    public readonly startTimestamp = Date.now()
+    public readonly startTimestamp = performance.now()
 
     private endTimestamp: number
 
@@ -94,16 +88,17 @@ export class Context{
         public readonly title: string, 
         public userContext: {[key:string]: unknown},
         public readonly channels$: Array<LogChannel> = [],
+        public readonly parent = undefined){
     }
 
     startChild(title: string, withUserInfo: {[key:string]: unknown} = {}): Context{
 
-        return new Context(title, {...this.userContext, ...withUserInfo}, this.logs$ )
+        return new Context(title, {...this.userContext, ...withUserInfo}, this.channels$, this )
     }
 
     withChild<T>(title: string, callback: (context: Context) => T, withUserInfo: {[key:string]: unknown} = {}) : T {
 
-        let childContext = new Context(title, {...this.userContext, ...withUserInfo}, this.logs$ )
+        let childContext = new Context(title, {...this.userContext, ...withUserInfo}, this.channels$, this )
         this.children.push(childContext)
         try{
             let result = callback(childContext) 
@@ -111,42 +106,51 @@ export class Context{
             return result
         }
         catch(error){
-            childContext.error(error)
+            childContext.error(error, error.data || error.status)
+            childContext.end()
             throw(error)
         }
     }
 
+    root(): Context {
+        return this.parent ? this.parent.root() : this
+    }
+
     error(error: Error, data?: unknown){
-        this.addLog(new ErrorLog(error, data ))
+        this.addLog(new ErrorLog(this, error, data ))
     }
 
     warning(text: string, data: unknown){
-        this.addLog(new WarningLog(text, data ))
+        this.addLog(new WarningLog(this, text, data ))
     }
 
     info(text: string, data: unknown){
-        this.logs.push(new InfoLog(text, data ))
-    }
-
-    expectation(text: string, status: ExpectationStatus<unknown>){
-        this.addLog(new ExpectationLog(text, status ))
-    }
-
-    output(text: string, data: unknown){
-        this.addLog(new OutputLog(text, status))
+        this.addLog(new InfoLog(this, text, data ))
     }
 
     end(){
-        this.endTimestamp = Date.now()
+        this.endTimestamp = performance.now()
     }
 
-    elapsed(){
-        return this.endTimestamp - this.startTimestamp
+    elapsed(from?: number): number | undefined{
+
+        from = from || this.startTimestamp
+
+        let getElapsedRec = (from: number, current: Context) => {
+            if(current.endTimestamp)
+                return current.endTimestamp - from
+            let maxi = current.children
+            .filter( child => child instanceof Context)
+            .map( (child: Context) => child.elapsed(from))
+            .filter( elapsed => elapsed != undefined)
+            .reduce( (acc,e) => e > acc ? e : acc , -1)
+            return maxi == -1? undefined : maxi
+        }
+        return getElapsedRec(from, this)
     }
 
     private addLog( log: Log) {
-        this.logs.push(log)
-        this.logs$ && this.logs$.next(log)
+        this.children.push(log)
         this.channels$.forEach(
             channel => channel.dispatch(log)
         ) 

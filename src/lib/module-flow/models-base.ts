@@ -1,14 +1,14 @@
 import * as _ from 'lodash'
 import { Observable, ReplaySubject, Subject } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { getAssetId, getUrlBase } from '@youwol/cdn-client'
 
 import { genericModulePlot, getTransforms } from './drawer-builder';
-import { Contract, ContractUnfulfilledError, IExpectation } from './contract';
+import { ExpectationStatus, IExpectation } from './contract';
 import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
-import { Context, ErrorLog, Log } from './context';
-import { UnconsistentConfiguration, mergeConfiguration, ConfigurationError } from './configuration-validation';
+import { Context, ErrorLog, Log, LogChannel } from './context';
+import { UnconsistentConfiguration, mergeConfiguration } from './configuration-validation';
 
 export type Pipe<T> = Subject<{ data: T, context?: unknown, configuration?: unknown }>
 
@@ -145,12 +145,38 @@ export class FluxPack{
 
 export class ModuleError extends Error {
 
-    constructor(public readonly mdle: ModuleFlow, ...params) {
+    constructor(
+        public readonly mdle: ModuleFlow, 
+        ...params) {
+
         super(...params)
         if(Error.captureStackTrace) {
             Error.captureStackTrace(this, ModuleError);
           }
         this.name = 'ModuleError';
+    }
+}
+
+export class ConfigurationError extends ModuleError{
+
+    constructor(
+        mdle: ModuleFlow, 
+        message:string, 
+        public readonly status:UnconsistentConfiguration<any>
+        ){
+        super(mdle, message)
+    }
+}
+
+
+export class ContractUnfulfilledError extends ModuleError{
+
+    constructor(
+        mdle: ModuleFlow,
+        message: string, 
+        public readonly status: ExpectationStatus<unknown>
+        ){
+        super(mdle, message)
     }
 }
 
@@ -172,6 +198,7 @@ export abstract class ModuleFlow {
 
     public readonly logs$ = new ReplaySubject<Log>(1)
     public readonly logChannels : Array<LogChannel>
+    
     constructor({ moduleId, configuration, Factory, cache, environment, helpers }:
         {
             moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
@@ -229,7 +256,7 @@ export abstract class ModuleFlow {
         let obs$ = new ReplaySubject<{ data: T, configuration?:Object, context?: Context }>(1)
         let piped = obs$.pipe(
             map(({ data, context, configuration }:{data: T, context?: Context, configuration?:Object}) => {
-                context && context.output('emit output', data)
+                context && context.info('emit output', data)
                 this.log("send output", { data, context, this: this })
                 return { 
                     data, 
@@ -261,8 +288,11 @@ export abstract class ModuleFlow {
         let inputSlot = this.inputSlots.find( slot => slot.slotId == slotId)
         let f = processDataFct.bind(this)
 
-        let context = new Context('input processing', data.context || {}, this.logs$)
-
+        let context = new Context( 'input processing',  data.context || {},  this.logChannels ) 
+        context.info(
+            `start processing functiof of module ${this.moduleId}`,
+            { connection, data, slotId}
+        )
         let adaptedInput = data
 
         if( connection && connection.adaptor ){
@@ -282,7 +312,10 @@ export abstract class ModuleFlow {
                     let status = mergeConfiguration(conf, adaptedInput.configuration)
 
                     if(status instanceof UnconsistentConfiguration)
-                        throw new ConfigurationError("Failed to merge default configuration with dynamic attributes", status)
+                        throw new ConfigurationError(
+                            this,
+                            "Failed to merge default configuration with dynamic attributes", 
+                            status)
 
                     return status.result
             })
@@ -306,9 +339,13 @@ export abstract class ModuleFlow {
             'resolve contract' , 
             (ctx) => {
                 let resolution = contract.resolve(adaptedInput.data)
-                ctx.expectation('resolved expectations', resolution)
+                if(resolution.succeeded)
+                    ctx.info('resolved expectations', resolution)
                 if(!resolution.succeeded)
-                    throw new ContractUnfulfilledError(`The input's contract of the input '${slotId}' has not been fullfiled.`, resolution)
+                    throw new ContractUnfulfilledError(
+                        this,
+                        `The input's contract of the input '${slotId}' has not been fullfiled.`, resolution
+                    )
                 return resolution
             }
         )
