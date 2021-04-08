@@ -1,3 +1,4 @@
+import { ModuleError, ModuleFlow } from "./models-base"
 
 
 export class ExpectationStatus<T>{
@@ -6,7 +7,8 @@ export class ExpectationStatus<T>{
         public readonly expectation:IExpectation<T>,
         public readonly children: Array<ExpectationStatus<T>> | undefined,
         public readonly succeeded: boolean,
-        public readonly value: T ){}
+        public readonly fromValue: any,
+        public readonly value: T){}
 }
 
 export class FullfiledExpectation<T> extends ExpectationStatus<T>{
@@ -14,23 +16,26 @@ export class FullfiledExpectation<T> extends ExpectationStatus<T>{
     constructor( 
         expectation: IExpectation<T>,
         value: T ,
+        fromValue: any,
         children?: Array<ExpectationStatus<T>> | undefined){
-            super(expectation, children, true, value)
+            super(expectation, children, true, fromValue, value)
         }
 }
 export class RejectedExpectation<T> extends ExpectationStatus<T>{
 
     constructor( 
         expectation: IExpectation<T>,
+        fromValue: any,
         children?: Array<ExpectationStatus<T>> | undefined){
-            super(expectation, children, false, undefined)
+            super(expectation, children, false,fromValue, undefined)
         }
 }
 export class UnresolvedExpectation<T> extends ExpectationStatus<T>{
 
     constructor( 
-        expectation: IExpectation<T>){
-            super(expectation, undefined, false, undefined)
+        expectation: IExpectation<T>,
+        fromValue: any ){
+            super(expectation, undefined, false, fromValue, undefined)
         }
 }
 
@@ -63,8 +68,8 @@ export class BaseExpectation<T> implements IExpectation<T> {
             ? this.when.resolve(inputData)
             : {succeeded:this.when(inputData), value: inputData}
         return succeeded 
-            ? new FullfiledExpectation(this, this.mapTo(value))
-            : new RejectedExpectation(this)
+            ? new FullfiledExpectation(this, this.mapTo(value), inputData)
+            : new RejectedExpectation(this, inputData)
     }
 }
 
@@ -81,8 +86,8 @@ export class Of<T> extends BaseExpectation<T> {
     resolve(inputData: any) : ExpectationStatus<T> {
         let succeeded = this.when(inputData)
         return succeeded 
-            ? new FullfiledExpectation(this, this.mapTo(inputData))
-            : new RejectedExpectation(this)
+            ? new FullfiledExpectation(this, this.mapTo(inputData), inputData)
+            : new RejectedExpectation(this, inputData)
     }
 }
 
@@ -100,7 +105,7 @@ export class AnyOf<T> extends BaseExpectation<T> {
         let done = false
         let children = this.expectations.map( (expectation) => {
             if(done)
-                return new UnresolvedExpectation(expectation)
+                return new UnresolvedExpectation(expectation, inputData)
             let resolved = expectation.resolve(inputData)
             done = resolved.succeeded
             return resolved
@@ -112,8 +117,8 @@ export class AnyOf<T> extends BaseExpectation<T> {
         )
 
         return resolved.succeeded 
-            ? new FullfiledExpectation(this, this.mapTo(resolved.value), children)
-            : new RejectedExpectation(this, children)
+            ? new FullfiledExpectation(this, this.mapTo(resolved.value), inputData, children)
+            : new RejectedExpectation(this, inputData, children)
     }
 }
 
@@ -139,7 +144,7 @@ export class AllOf<T> extends BaseExpectation<T> {
         let done = false
         let children = this.expectations.map( (expectation) => {
             if(done)
-                return new UnresolvedExpectation(expectation)
+                return new UnresolvedExpectation(expectation, inputData)
             let resolved = expectation.resolve(inputData)
             done = !resolved.succeeded
             return resolved
@@ -155,8 +160,8 @@ export class AllOf<T> extends BaseExpectation<T> {
             }, { succeeded:true, elems:[] }
         )
         return resolveds.succeeded 
-            ? new FullfiledExpectation(this, this.mapTo(resolveds.elems), children)
-            : new RejectedExpectation(this, children)
+            ? new FullfiledExpectation(this, this.mapTo(resolveds.elems), inputData, children)
+            : new RejectedExpectation(this, inputData, children)
     }
 }
 
@@ -180,7 +185,7 @@ export class OptionalsOf<T> extends BaseExpectation<T> {
 
         let children = this.expectations.map( (expectation) => expectation.resolve(inputData))
         let resolveds = children.reduce( ( acc, status ) => acc.concat([status.value]), [] )
-        return new FullfiledExpectation(this, this.mapTo(resolveds), children)
+        return new FullfiledExpectation(this, this.mapTo(resolveds), inputData, children)
     }
 }
 
@@ -198,13 +203,13 @@ export class ExpectAttribute<T> extends BaseExpectation<T> {
     resolve(inputData: any) : ExpectationStatus<T> {
 
         if(inputData[this.attName] == undefined)
-            return new RejectedExpectation(this)
+            return new RejectedExpectation(this, inputData)
 
 
         let resolved = this.expectation.resolve(inputData[this.attName])
         return resolved.succeeded 
-            ? new FullfiledExpectation(this, this.mapTo(resolved.value), [resolved])
-            : new RejectedExpectation(this, [resolved])
+            ? new FullfiledExpectation(this, this.mapTo(resolved.value), inputData, [resolved])
+            : new RejectedExpectation(this, inputData, [resolved])
     }
 }
 
@@ -349,8 +354,8 @@ export class Contract implements IExpectation<unknown>{
         let values = {...valuesRequired, ...valuesOptional}
 
         return requiredStatus.succeeded 
-            ? new FullfiledExpectation(this, values,[requiredStatus, optionalStatus])
-            : new RejectedExpectation(this, [requiredStatus, optionalStatus])
+            ? new FullfiledExpectation(this, values, data, [requiredStatus, optionalStatus])
+            : new RejectedExpectation(this, data, [requiredStatus, optionalStatus])
     }
 }
 
@@ -360,17 +365,9 @@ export class FreeContract implements IExpectation<unknown>{
     constructor(){}
 
     resolve( data: unknown ) :  ExpectationStatus<unknown>  {
-        return new FullfiledExpectation<unknown>(this, data,[])
+        return new FullfiledExpectation<unknown>(this, data, data, [])
     }
 }
-
-export class ContractUnfulfilledError extends Error{
-
-    constructor(message: string, public readonly status: ExpectationStatus<unknown>){
-        super(message)
-    }
-}
-
 
 export function contract(
     {description, requireds, optionals}: 
