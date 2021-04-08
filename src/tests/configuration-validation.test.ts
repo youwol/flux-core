@@ -80,7 +80,7 @@ test('consistent replacment', () => {
         persistentData,
         {
             numberProp: 2, 
-            enumProp: ['b'], 
+            enumProp: 'b', 
             data:{x:4},
             code: "function foo(){"
         })
@@ -104,13 +104,13 @@ test('unconsistent replacment', () => {
             attributeName: "enumProp",
             actualValue: "f",
             expectedType: "String",
-            error: "Got 'f' while expected values from enum are: a,b,c",
+            error: "Got 'f' while expected values from enum are: a,b,c.",
         })
         expect(status.typeErrors[1]).toEqual({
             attributeName: "data.x",
             actualValue: 5.2,
             expectedType: "Integer",
-            error: "Got '5.2' while 'integer' expected",
+            error: "Got '5.2' while 'integer' expected.",
         })
         expect(status.typeErrors[2]).toEqual({
             attributeName: "numberProp",
@@ -121,6 +121,28 @@ test('unconsistent replacment', () => {
     }
 })
 
+test('unconsistent replacment with objects', () => {
+
+    let persistentData = new Derived()
+    let v = new ArrayBuffer(256) 
+    let status = mergeConfiguration(persistentData,{numberProp: v  })
+    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+
+    if( status instanceof UnconsistentConfiguration){
+            
+        expect(status.intrus).toEqual([])
+        expect(status.missings).toEqual([])
+        expect(status.typeErrors.length).toEqual(1)
+        expect(status.typeErrors[0]).toEqual({
+            attributeName: "numberProp",
+            actualValue: v,
+            expectedType: "Number",
+            error: "Got 'object' while 'Number' expected.",
+        }) 
+    }
+    status = mergeConfiguration(persistentData,{numberProp: {} })
+    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+})
 
 test('unexpected value', () => {
 
@@ -151,14 +173,14 @@ test('missing value', () => {
             {
             attributeName: "data.x",
             actualValue: undefined,
-            expectedType: "Number",
-            error: "Got undefined while a string or number was expected",
+            expectedType: "Integer",
+            error: "Got 'undefined' while 'integer' expected.",
             },
             {
             attributeName: "data.y",
             actualValue: undefined,
-            expectedType: "Number",
-            error: "Got undefined while a string or number was expected",
+            expectedType: "Integer",
+            error: "Got 'undefined' while 'integer' expected.",
             },
         ]) 
     }

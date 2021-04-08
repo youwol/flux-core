@@ -1,8 +1,8 @@
 import {AUTO_GENERATED} from '../auto_generated'
 import { Context, ErrorLog } from '../lib/module-flow/context'
-import { expectAnyOf, expectAttribute, expect as expect_, expectCount, ContractUnfulfilledError } from '../lib/module-flow/contract'
+import { expectAnyOf, expectAttribute, expect as expect_, expectCount } from '../lib/module-flow/contract'
 import { BuilderView, Flux, Property, RenderView, Schema } from '../lib/module-flow/decorators'
-import { FluxPack, ModuleFlow, Pipe } from '../lib/module-flow/models-base'
+import { ContractUnfulfilledError, FluxPack, ModuleFlow, Pipe } from '../lib/module-flow/models-base'
 import { instantiateModules, parseGraph } from '../lib/simple-parser/parser'
 import { Runner } from '../lib/simple-parser/runner'
 import { attr$, render } from "@youwol/flux-view"
@@ -358,12 +358,12 @@ test('invalid configuration', (done) => {
 
         expect(error).toBeInstanceOf(ConfigurationError)
 
-        if(error instanceof ConfigurationError)
+        if(error instanceof ConfigurationError) 
             expect(error.status.typeErrors[0]).toEqual({
                 attributeName: "operationType",
                 actualValue: "division",
                 expectedType: "String",
-                error: "Got 'division' while expected values from enum are: addition,multiplication",
+                error: "Got 'division' while expected values from enum are: addition,multiplication.",
             })
         done()
     })

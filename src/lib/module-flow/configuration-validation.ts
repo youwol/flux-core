@@ -1,7 +1,6 @@
 import { flattenSchemaWithValue } from "./decorators"
 import * as _ from 'lodash'
 
-
 export class ConfigurationStatus<T>{
 
     constructor(
@@ -36,12 +35,6 @@ export class UnconsistentConfiguration<T> extends ConfigurationStatus<T>{
         }
 }
 
-export class ConfigurationError extends Error{
-
-    constructor(message:string, public readonly status:UnconsistentConfiguration<any>){
-        super(message)
-    }
-}
 
 export function findIntrus( prefix, object, reference) : Array<string> {
 
@@ -60,24 +53,30 @@ export function findIntrus( prefix, object, reference) : Array<string> {
 
 
 export function isConsistent(key, val, schema){
+    // We may want to deal with code in order to accept javascript function
+    // if(schema.metadata.type=="code")
+    //    return true
 
-    if(schema.metadata.type=="code")
-        return true
+    if( schema.type=="String" && schema.metadata.enum && typeof val!="string" )
+        return [false, key, val, schema.type, `Got '${typeof val}' while 'String' expected as part of enum.` ]
 
-    if(typeof val=="string" && schema.type!="String")
-        return [false, key, val, schema.type, `Got 'string' while '${schema.type}' expected.` ]
+    if( schema.type=="String" && schema.metadata.enum && typeof val=="string" && !schema.metadata.enum.includes(val))
+        return [false, key, val, schema.type, `Got '${val}' while expected values from enum are: ${schema.metadata.enum}.`  ]
 
-    if(typeof val=="string" && schema.type=="String" && schema.metadata.enum && !schema.metadata.enum.includes(val))
-        return [false, key, val, schema.type, `Got '${val}' while expected values from enum are: ${schema.metadata.enum}` ]
+    if( schema.type=="String" && typeof val!="string")
+        return [false, key, val, schema.type, `Got '${typeof val}' while 'String' expected.` ]
 
-    if(typeof val=="number" && schema.type!="Number")
-        return [false, key, val, schema.type, `Got 'number' while '${schema.type}' expected.` ]
-    
-    if(typeof val=="number" && schema.type=="Number" && schema.metadata && schema.metadata.type=="integer" && !Number.isInteger(val) )
-        return [false, key, val, "Integer", `Got '${val}' while 'integer' expected` ]
-    
+    if( schema.type=="Number" && schema.metadata && schema.metadata.type=="integer" && !Number.isInteger(val) )
+        return [false, key, val, "Integer", `Got '${val}' while 'integer' expected.` ]
+   
+    if( schema.type=="Number" && typeof(val) != 'number')
+        return [false, key, val, schema.type, `Got '${typeof val}' while 'Number' expected.` ]
+        
+    if( schema.attributes && typeof(val) != 'object')
+        return [false, key, val, schema.type, `Got '${typeof val}' while '${schema.type}' expected.` ]
+
     if(val==undefined && (schema.type=="Number" || schema.type=="String"))
-        return [false, key, val, schema.type, `Got undefined while a string or number was expected` ]
+        return [false, key, val, schema.type, `Got undefined while a string or number was expected.` ]
 
     return true
 }
