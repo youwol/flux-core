@@ -1,7 +1,8 @@
 import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, LoadingGraph } from "@youwol/cdn-client"
-import { from, Observable, of } from "rxjs"
+import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
+import { ErrorLog } from "./module-flow/context";
 import { FluxPack } from "./module-flow/models-base";
 
 
@@ -27,7 +28,9 @@ type IConsole = {
 export interface IEnvironment{
 
     console: IConsole
-
+    
+    errors$ : Subject<ErrorLog>
+    
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
     fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>
@@ -39,14 +42,17 @@ export interface IEnvironment{
     postProject(projectId:string, project:Object ) : Observable<void> 
 
     getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema>
+
 }
 
 export class Environment implements IEnvironment{
 
-    executingWindow: Window
-    renderingWindow: Window
+    public readonly executingWindow: Window
+    public readonly renderingWindow: Window
 
-    console: IConsole
+    public readonly errors$ = new ReplaySubject<ErrorLog>()
+
+    public readonly console: IConsole
 
     constructor( data:
                 {executingWindow: Window, renderingWindow: Window , console?: Console }){
@@ -108,6 +114,8 @@ export class MockEnvironment implements IEnvironment{
     public readonly fluxPacksDB: {[key:string]: FluxPack}
     public readonly loadingGraphResponses: {[key:string]: LoadingGraphSchema}
     public readonly console: IConsole
+
+    public readonly errors$ = new ReplaySubject<ErrorLog>()
 
     constructor(
         data: {

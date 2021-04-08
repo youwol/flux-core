@@ -53,6 +53,34 @@ export class CustomLog<T> extends Log{
     }
 }
 
+export class LogChannel<T=unknown>{
+
+    filter: (data: Log) => boolean
+    map: (data: Log) => T
+    pipes: Array<Subject<T>>
+
+    constructor( { filter, map, pipes }:
+        {
+            filter: (data: Log) => boolean,
+            map?: (data: Log) => T,
+            pipes: Array<Subject<T>>
+        }){
+
+        this.filter = filter
+        this.map = map == undefined ? (d) => (d as unknown as T) : map
+        this.pipes = pipes
+    }
+
+    dispatch( log: Log) {
+
+        if( this.filter(log))
+            this.pipes.forEach( (pipe) => {
+                pipe.next(this.map(log))
+            })
+    }
+}
+
+
 export class Context{
 
     children = new Array<Context>()
@@ -65,7 +93,7 @@ export class Context{
     constructor(
         public readonly title: string, 
         public userContext: {[key:string]: unknown},
-        public readonly logs$?: ReplaySubject<Log> ){
+        public readonly channels$: Array<LogChannel> = [],
     }
 
     startChild(title: string, withUserInfo: {[key:string]: unknown} = {}): Context{
@@ -119,5 +147,8 @@ export class Context{
     private addLog( log: Log) {
         this.logs.push(log)
         this.logs$ && this.logs$.next(log)
+        this.channels$.forEach(
+            channel => channel.dispatch(log)
+        ) 
     }
 }

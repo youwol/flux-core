@@ -171,8 +171,7 @@ export abstract class ModuleFlow {
     public cache: Cache
 
     public readonly logs$ = new ReplaySubject<Log>(1)
-    public readonly notifier$ = new ReplaySubject(1)
-
+    public readonly logChannels : Array<LogChannel>
     constructor({ moduleId, configuration, Factory, cache, environment, helpers }:
         {
             moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
@@ -185,11 +184,17 @@ export abstract class ModuleFlow {
         this.Factory = Factory
         this.helpers = helpers ? helpers : {}
         this.cache = cache ? cache : new Cache()
-        this.logs$.pipe(
-            filter( log => log instanceof ErrorLog )
-        ).subscribe( (errorLog: ErrorLog)  => {
-            this.notifier$.next( new ModuleError(this, errorLog.text ))
-        })
+        this.logChannels = [ 
+            new LogChannel<Log>({
+                filter: (log) => log instanceof Log,
+                pipes: [this.logs$]
+            }),
+            new LogChannel<ErrorLog<ModuleError>>({
+                filter: (log) => log instanceof ErrorLog,
+                //map:(errorLog: ErrorLog) => new ModuleError(this, errorLog.context,  errorLog.text ),
+                pipes: [this.environment.errors$]
+            })
+        ]
     }
 
     getSlot(slotId: string): Slot {
