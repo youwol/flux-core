@@ -1,5 +1,6 @@
 
 import { ModuleFlow, Pipe,genericModulePlot, freeContract} from '../index'
+import { MockEnvironment } from '../lib/environment'
 
 console.log = () =>{}
 
@@ -34,7 +35,12 @@ export class Module extends ModuleFlow{
 
 test('modulePlot', () => {
     let moduleId= 'toto'
-    let mdle = new Module( { moduleId, configuration: {title:"title"}, Factory: undefined, environment: undefined })
+    let mdle = new Module( { 
+        moduleId, 
+        configuration: {title:"title"}, 
+        Factory: undefined, 
+        environment: new MockEnvironment() 
+    })
 
     let p = genericModulePlot({module:mdle,icon:"", width:100, vMargin:10, vStep:10}) 
 
@@ -85,7 +91,12 @@ export class Module2 extends ModuleFlow{
 
 test('modulePlot 2', () => {
     let moduleId= 'toto'
-    let mdle = new Module2( { moduleId, configuration: {title:"title"}, Factory: undefined, environment: undefined })
+    let mdle = new Module2( { 
+        moduleId, 
+        configuration: {title:"title"}, 
+        Factory: undefined, 
+        environment: new MockEnvironment()
+     })
 
     let p = genericModulePlot({module:mdle,icon:"", width:100, vMargin:10, vStep:10}) 
 
