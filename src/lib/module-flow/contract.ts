@@ -252,11 +252,11 @@ export function expectSingle<T>({when}:{when: IExpectation<T>}){
         description: `expect single of "${when.description}"`,
         when: [          
             expect({
-                description:`a single element`,
+                description:`an element "${when.description}"`,
                 when: (d) => when.resolve(d).succeeded
             }),
             expectAllOf<any>({
-                description:"",
+                description:`an array with exactly one element "${when.description}"`,
                 when: 
                 [
                     expect({
@@ -264,7 +264,7 @@ export function expectSingle<T>({when}:{when: IExpectation<T>}){
                         when: (d) => Array.isArray(d),
                     }),
                     expect({
-                        description:'an array',
+                        description:`the array includes a single element "${when.description}"`,
                         when: (elems: Array<unknown>) => elems.filter( d => when.resolve(d).succeeded ).length == 1,
                         mapTo: (elems: Array<unknown>) =>  when.resolve( elems.find( d => when.resolve(d).succeeded ) ).value
                     }),
@@ -294,7 +294,7 @@ export function expectSome<T>({when}:{when: IExpectation<T>}){
                         when: (d) => Array.isArray(d),
                     }),
                     expect({
-                        description:`some element(s) "${when.description}"`,
+                        description:`the array includes some element(s) "${when.description}"`,
                         when: (elems: Array<unknown>) => {
                             return elems.filter( d => when.resolve(d).succeeded ).length > 0
                         },
