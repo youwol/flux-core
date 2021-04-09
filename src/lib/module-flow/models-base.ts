@@ -521,12 +521,12 @@ export abstract class ModuleFlow {
 
         let context = new Context( 'input processing',  data.context || {},  this.logChannels ) 
         this.addJournal({
-            title: `Execution triggered from input slot ${slotId}`,
+            title: `Execution triggered from input slot "${slotId}"`,
             entryPoint: context
         })
         context.info(
             `start processing function of module ${this.moduleId}`,
-            { connection, data, slotId}
+            { connection, 'raw input': data, slotId}
         )
         let adaptedInput = data
 
@@ -579,7 +579,7 @@ export abstract class ModuleFlow {
                 if(!resolution.succeeded)
                     throw new ContractUnfulfilledError(
                         this,
-                        `The input's contract of the input '${slotId}' has not been fullfiled.`, resolution
+                        `The contract of the input "${slotId}" has not been fullfiled.`, resolution
                     )
                 return resolution
             }
@@ -589,7 +589,7 @@ export abstract class ModuleFlow {
             configuration:conf, 
             context
         }
-        context.info('Input data provided to the module', {data: input.data, configuration: conf})
+        context.info('Input provided to the module', {data: input.data, configuration: conf})
         context.withChild(
             "module's processing",
             (ctx) => {
