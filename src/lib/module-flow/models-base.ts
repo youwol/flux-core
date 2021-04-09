@@ -181,24 +181,118 @@ export class ContractUnfulfilledError extends ModuleError{
 }
 
 
+/**
+ * 
+ * Base class for modules in Flux
+ * 
+ * When creating a new module's type, it has to inherit either directly or indirectly from 
+ * this class. 
+ * 
+ * > In the case of a plugin, see the [[PluginFlow | plugin]] class - they basically 
+ * add an attribute 'parentModule' upon ModuleFlow, and usually are associated 
+ * to a concept of [[SideEffect]] (when plugin is installed/removed).
+ * 
+ * The main steps of defining a module are described below.
+ * 
+ * ### Defining inputs
+ * 
+ * The purpose of an input is to trigger a process when incoming data
+ * reach it.
+ * A process is basically a function: as in a function, all the arguments should 
+ * be provided **at the same time** - meaning incoming data should include all the 
+ * 'arguments' at once of the process.
+ * 
+ * In *Flux*, there is no restriction upon which module's output can be connected
+ * to another module's input: the data's type reaching a module are unknwown.
+ * To facilitate dealing with *a priori* unknown data, the module can specify [[Contract | contract]] 
+ * for each of its input to ensure required conditions are fullfiled before reaching the input's process
+ * (it also provide a strongly typed 'get' function).
+ * 
+ * See [[addInput]].
+ * 
+ * ### Defining outputs
+ * 
+ * The purpose of an output is to emit data, as opposed to the input case, the type's 
+ * of the data are known and provided to the [[addOutput]] function.
+ * 
+ * ### Defining the rendering view (optional)
+ * 
+ * Some modules may be associated to a view allowing the user to interact with the module.
+ * See [[ModuleRendererRun]].
+ *  
+ * ## Examples
+ * 
+ * Commented code of usual scenarios are provided in the tests folder:
+ * -    [example1](https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts) 
+ * A case of a module that does operations with 2 numbers
+ * 
+ * ## Deriving a new module's type
+ * 
+ * This ModuleFlow's constructor is usually called by forwarding the parameters from 
+ * the constructor of the derived class: 
+ * 
+ * ```typescript
+ *  export class Module extends ModuleFlow {
+ * 
+ *       constructor( params ){
+ *           super(params) 
+ *          //...
+ *       }
+ *   }
+ ```
+ *  
+ * An exception is when a module is exposing helper functions 
+ * (helper functions can be used when writting [[Adaptor | adpators]]):
+ *```typescript
+ *
+ *  function myHelpingFunction(){
+ *      //...
+ *  }
+ *  export class Module extends ModuleFlow {
+ * 
+ *       constructor( params ){
+ *           super( { ...params, ...{ helpers:{'myHelpingFunction': myHelpingFunction}}) 
+ *           //...
+ *       }
+ *   }
+ ```
+ *  
+ * ## Instantiating modules
+ * 
+ *  The ModuleFlows' constructors are usually not called directly:
+ * -    in *Flux* app they are called internally
+ * -    in unit tests (or custom code), modules are usually instantiated using
+ * the function [[instantiateModules]] 
+ *
+ */
 export abstract class ModuleFlow {
 
     public readonly Factory: Factory
-
     public readonly moduleId: string
     public readonly environment: IEnvironment
     public readonly configuration: ModuleConfiguration
-    public readonly logger: any
     public readonly helpers: {[key:string]: any}
 
-    public inputSlots = new Array<InputSlot>()
-    public outputSlots = new Array<OutputSlot<any>>()
-
-    public cache: Cache
+    public readonly inputSlots = new Array<InputSlot>()
+    public readonly outputSlots = new Array<OutputSlot<any>>()
 
     public readonly logs$ = new ReplaySubject<Log>(1)
     public readonly logChannels : Array<LogChannel>
+
+    public cache: Cache
+    public journals: Array<Journal>
     
+    /**
+     * @param moduleId if provided, the module unique id; if not provided a unique id 
+     * is auto generated
+     * @param Factory more or less the namespace that encapsulate the module
+     * @param configuration the configuration with default persistent data
+     * @param environment the hosting environment
+     * @param helpers a dictionary of related helping functions that can be used
+     * when writing an adaptors for the module
+     * @param cache usually not provided (a new cache is created); this argument can 
+     * provide a handle for case of cache recycling (e.g. from a previous module's instance).
+     */
     constructor({ moduleId, configuration, Factory, cache, environment, helpers }:
         {
             moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
@@ -218,39 +312,159 @@ export abstract class ModuleFlow {
             }),
             new LogChannel<ErrorLog<ModuleError>>({
                 filter: (log) => log instanceof ErrorLog,
-                //map:(errorLog: ErrorLog) => new ModuleError(this, errorLog.context,  errorLog.text ),
                 pipes: [this.environment.errors$]
             })
         ]
     }
 
-    getSlot(slotId: string): Slot {
+    /**
+     * @param slotId the slot id 
+     * @returns Matching input or output slot; undefined if not found
+     */
+    getSlot(slotId: string): Slot | undefined {
         return [...this.inputSlots, ...this.outputSlots].find((slot) => slot.slotId == slotId)
     }
 
-    getInputSlot(slotId: string): InputSlot {
+    /**
+     * @param slotId the slot id 
+     * @returns Matching input slot; undefined if not found
+     */
+    getInputSlot(slotId: string): InputSlot | undefined {
         return this.inputSlots.find((slot) => slot.slotId == slotId)
     }
 
-    getOutputSlot<T=unknown>(slotId: string): OutputSlot<{data:T, configuration:any, context: any}> {
+    /**
+     * @param slotId the slot id 
+     * @returns Matching output slot; undefined if not found
+     */
+    getOutputSlot<T=unknown>(
+        slotId: string
+        ): OutputSlot<{data:T, configuration:any, context: any}> | undefined {
+
         return this.outputSlots.find((slot) => slot.slotId == slotId)
     }
-
+    /**
+     * Log a message with data in the 'console' ('console' is exposed in the [[IEnvironment | environment]]).
+     * 
+     * @param message 
+     * @param data 
+     */
     log(message, data) {
         this.environment.console && this.environment.console.log(this.Factory.id, message, data, this)
     }
 
-    getConfiguration<T>() {
-        return this.configuration.data as T
+    /**
+     * This function return the **default** PersistentData of the module.
+     * The default data can be updated at run time: the updated version 
+     * is then provided to the 'onTriggered' callback defined in [[addInput]]
+     * method.
+     * 
+     * @returns Default persistent data 
+     */
+    getConfiguration<TPersistentData>() : TPersistentData{
+        return this.configuration.data as TPersistentData
     }
 
+    /**
+     * From the  [example1](https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts),
+     * below is an instance of input's declaration, we use it to introduce some important concepts.
+     *  
+     *```typescript
+     *   this.addInput({
+     *      id:'input',
+     *      description: 'trigger an operation between 2 numbers',
+     *      contract: expectCount<number>( {count:2, when:permissiveNumber}),
+     *      onTriggered: (
+     *          {data, configuration, context}:
+     *          {data: [number, number], configuration: PersistentData, context: Context }) => 
+     *              this.do(data, configuration, context)
+     *   })
+     ``` 
+     * ### A note about contract
+     *
+     * There are two benefits of providing one (there exist the [[freeContract]]
+     * if you are not interested by the benefits ):
+     * -    it ensures that the data that will enter the 'onTriggered' function verifies 
+     * a list of preconditions
+     * -    it allows to provide strongly typed data to the 'onTriggered' callback (here [number, number]).
+     * By using for instance a *freeContract* the type of data is unknown.
+     *
+     * ### A note about *{data, configuration, context}* parameters
+     *
+     * As can be seen in the above example, the arguments provide to the *onTriggered* callback are:
+     * -    data: this is the data part of the incoming message
+     * -    configuration: this is the configuration: a merge between the default one defined
+     * by the user and eventually some attributes provided in the 'configuration' part of the incoming 
+     * message. Usually, these overidding attributes ared defined using [[Adaptor | adaptors]].
+     * -    [[Context | context]]: the context has two objectives: (i) to forward some user defined mapping
+     * key->value through the workflow, (ii) to allow the developer to provide (eventually interactives) 
+     * insights about module's execution (info, errors, timings, execution stack). 
+     * In 'Flux' users can access them through right click on a module, the [[Journal | journals]]. 
+     * 
+     * 
+     * @param id id - usually a meaningfull name that is not shared with other inputs/outputs
+     * @param description description of the process triggered by the input when incoming data
+     * comes in
+     * @param contract [[Contract | contract]] that defines pre-conditions for incoming data to fullfil in order
+     * to reach the triggered process
+     * @param onTriggered The callback called with incoming data 
+     */
     addInput({ id, description, contract, onTriggered }
-        :{id: string, description:string, contract: IExpectation<unknown>, onTriggered}
+        :{
+            id: string, 
+            description:string, 
+            contract: IExpectation<unknown>, 
+            onTriggered : ({data, configuration, context}, {cache: Cache}) => void
+        }
         ){
         let slot = this.newInputSlot({id, description, contract, onTriggered })
         this.inputSlots.push(slot)
     }
 
+    /**
+     * The method **addOutput** declares a new output for the module and
+     * return a handle ([[Pipe]]) to emit value at any time.
+     * 
+     * An output is usually used in such way:
+     * 
+     ```typescript
+     * export class Module extends ModuleFlow {
+        
+     *      result$ : Pipe<number>
+     *
+     *       constructor( params ){
+     *          super(params) 
+     *
+     *          this.addInput({
+     *               id:'input',
+     *               description: 'trigger an operation between 2 numbers',
+     *               contract: expectCount<number>( {count:2, when:permissiveNumber}),
+     *               onTriggered: ({data, configuration, context}) => 
+     *                  this.do(data, configuration, context)
+     *           })
+     *          this.result$ = this.addOutput({id:'result'})
+     *      }
+     * 
+     *      do( data: [number, number], configuration: PersistentData, context: Context ) {
+     *
+     *          let result = operationsFactory[configuration.operationType](data)
+     *          context.info('Computation done', {result})
+     *          this.result$.next({data:result,context})
+     *       }
+     *  }
+     * 
+     ``` 
+     * Couple of comments:
+     * -    The [[Pipe]] **result$**  is strongly typed; the trailing '$' character is a convention
+     * from RxJS to indicates that the variable is a stream.
+     * -    We send some data into the pipe using the **next** method.
+     * -    Whenever possible, it is important to forward the input context into the output pipe:
+     *  (i) it ensures that user defined context in the workflow app is properly forwarded, and (ii) it
+     * allows to provide more information in the journals of execution about output emissions.
+     * 
+     * @param id  id - usually a meaningfull name that is not share with other inputs/outputs
+     * @returns A pipe that allows to emit data
+     */
     addOutput<T>({id} : {id: string}): Pipe<T> {
 
         let obs$ = new ReplaySubject<{ data: T, configuration?:Object, context?: Context }>(1)
@@ -418,6 +632,12 @@ export abstract class ModuleRendererRun {
     abstract render()
 }
 
+/**
+ * Base class for plugins in *Flux*
+ * 
+ * When a new plugin's type is created, it has to inherit either directly or indirectly from 
+ * this class.
+ */
 export class PluginFlow<T> extends ModuleFlow {
 
     readonly parentModule : T = undefined
