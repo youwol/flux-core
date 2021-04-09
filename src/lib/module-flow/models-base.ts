@@ -504,7 +504,12 @@ export abstract class ModuleFlow {
             this.moduleId, 
             {description, contract},
             ({ connection, data }: { connection: Connection, data: any }) => {
-                this.processInput(onTriggered, { connection, data, slotId:id })
+                try{
+                    this.processInput(onTriggered, { connection, data, slotId:id }) 
+                }
+                catch(e){
+                    console.error(e)
+                }
             }
         )
     }
