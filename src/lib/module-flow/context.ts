@@ -156,3 +156,20 @@ export class Context{
         ) 
     }
 }
+
+export class Journal{
+
+    entryPoint: Context
+    title: string
+
+    constructor({
+        title,
+        entryPoint
+    }:{
+        title: string,
+        entryPoint: Context
+    }){
+        this.entryPoint = entryPoint
+        this.title = title
+    }
+}

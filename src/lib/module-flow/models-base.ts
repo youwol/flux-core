@@ -7,7 +7,7 @@ import { genericModulePlot, getTransforms } from './drawer-builder';
 import { ExpectationStatus, IExpectation } from './contract';
 import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
-import { Context, ErrorLog, Log, LogChannel } from './context';
+import { Context, ErrorLog, Journal, Log, LogChannel } from './context';
 import { UnconsistentConfiguration, mergeConfiguration } from './configuration-validation';
 
 export type Pipe<T> = Subject<{ data: T, context?: unknown, configuration?: unknown }>
@@ -180,7 +180,6 @@ export class ContractUnfulfilledError extends ModuleError{
     }
 }
 
-
 /**
  * 
  * Base class for modules in Flux
@@ -280,7 +279,7 @@ export abstract class ModuleFlow {
     public readonly logChannels : Array<LogChannel>
 
     public cache: Cache
-    public journals: Array<Journal>
+    public journals: Array<Journal> = []
     
     /**
      * @param moduleId if provided, the module unique id; if not provided a unique id 
@@ -483,6 +482,19 @@ export abstract class ModuleFlow {
         return obs$ as any;
     }
 
+    /**
+     * Add/update a journal record (only one journal for a specific title is stored).
+     * 
+     * @param title title of the journal
+     * @param entryPoint the [[Context | context]] entry point of the journal
+     */
+    addJournal( { title, entryPoint } : {title: string, entryPoint: Context}) {
+
+        this.journals = this.journals
+        .filter( j => j.title != title)
+        .concat([new Journal({title, entryPoint})])
+    }
+
     private newInputSlot({id, description, contract, onTriggered }:
         {id: string, description:string, contract: IExpectation<unknown>, onTriggered}
         ){
@@ -503,8 +515,12 @@ export abstract class ModuleFlow {
         let f = processDataFct.bind(this)
 
         let context = new Context( 'input processing',  data.context || {},  this.logChannels ) 
+        this.addJournal({
+            title: `Execution triggered from input slot ${slotId}`,
+            entryPoint: context
+        })
         context.info(
-            `start processing functiof of module ${this.moduleId}`,
+            `start processing function of module ${this.moduleId}`,
             { connection, data, slotId}
         )
         let adaptedInput = data
