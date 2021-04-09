@@ -74,7 +74,12 @@ export class LogChannel<T=unknown>{
     }
 }
 
+export enum ContextStatus{
 
+    SUCCESS = 'success',
+    RUNNING = 'running',
+    FAILED = 'failed'
+}
 export class Context{
 
     children = new Array<Context | Log>()
@@ -140,13 +145,34 @@ export class Context{
             if(current.endTimestamp)
                 return current.endTimestamp - from
             let maxi = current.children
-            .filter( child => child instanceof Context)
-            .map( (child: Context) => child.elapsed(from))
+            .map( (child: Context | Log ) =>{
+                return child instanceof Context 
+                    ? child.elapsed(from)
+                    : child.timestamp - from 
+            })
             .filter( elapsed => elapsed != undefined)
             .reduce( (acc,e) => e > acc ? e : acc , -1)
             return maxi == -1? undefined : maxi
         }
         return getElapsedRec(from, this)
+    }
+
+    status() : ContextStatus {
+
+        let isErrorRec = (ctx: Context) => {
+            return ctx.children.find( (child) => child instanceof ErrorLog) != undefined ||
+                ctx.children
+                .filter( child => child instanceof Context)
+                .find( (child: Context) => isErrorRec(child)) != undefined
+        }
+
+        if(isErrorRec(this))
+            return ContextStatus.FAILED
+
+        if(this.endTimestamp!=undefined)
+            return ContextStatus.SUCCESS
+
+        return ContextStatus.RUNNING
     }
 
     private addLog( log: Log) {
