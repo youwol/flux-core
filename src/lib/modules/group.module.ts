@@ -139,7 +139,7 @@ export namespace GroupModules {
                     id:`explicitOutput${i}_in`, 
                     description: 'input side of an explicit output',
                     contract:undefined,
-                    onTriggered: (data, _, context) => {
+                    onTriggered: ({data, context}) => {
                         externalOut.next({ data, context })
                     }
                 })

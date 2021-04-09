@@ -68,7 +68,7 @@ export namespace MapReduce {
             this.output$ = this.addOutput( {id:'output'})
         }
 
-        map(data: Array<any>, context: Context){
+        map({data, context}: {data:Array<any>, context: Context}){
 
             if(!Array.isArray(data))
                 throw Error("The MapReduce module is only accepting array as input")

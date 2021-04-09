@@ -280,8 +280,8 @@ export namespace Console {
                 id:"message", 
                 description: "",
                 contract: freeContract(),
-                onTriggered: ({data, configuration, ctx} ) => 
-                    console.log(configuration.prefix, {data,configuration,ctx}) 
+                onTriggered: ({data, configuration, context} ) => 
+                    console.log(configuration.prefix, {data,configuration,context}) 
             })
         }
     }
