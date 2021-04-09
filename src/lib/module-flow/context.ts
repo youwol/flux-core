@@ -183,11 +183,58 @@ export class Context{
     }
 }
 
+/**
+ * A journal's widget allows to render complex data structures and interact with them from a UI.
+ * 
+ * It is an association between a test function returning whether or not  
+ * a data structure can be rendered and a view (HTMLElement) generator.
+ * 
+ * @param TData Allows to provide strong typings for the data accepted by the function [[view]].
+ * Depending on the condition defined by [[isCompatible]] it may not always be more specific
+ * than *any*.
+ */
+export class JournalWidget<TData = any>{
+
+    /**
+     * @param isCompatible a function that takes as argument a data end returns
+     * true if the view can be constructed from it 
+     * @param view a view constructor
+     */
+    constructor(
+        public readonly isCompatible: (data: any) => boolean,
+        public readonly view: (data: TData) => HTMLElement
+    ){}
+}
+
+/**
+ * The Journal class encapsulates the required data to render a [[Context]] 
+ * (and its children) in an HTML document.
+ * 
+ */
 export class Journal{
 
+    /**
+     * The entry point: the journal render this context and all of its children
+     */
     entryPoint: Context
+
+    /**
+     * title of the journal
+     */
     title: string
 
+    /**
+     * Registered widgets that are used to render the *data* property of
+     * a [[Log]] if possible (if the function [[JournalWidget.isCompatible]] apply 
+     * to this *data* return true).
+     */
+    static widgets : Array<JournalWidget> = []
+
+    /**
+     * 
+     * @param title see [[title]]
+     * @param entryPoint see [[entryPoint]]
+     */
     constructor({
         title,
         entryPoint
