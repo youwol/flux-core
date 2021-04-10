@@ -2,7 +2,13 @@ import { ModuleFlow } from './models-base';
 import { GroupModules } from '../modules/group.module';
 import { Component } from '../modules/component.module';
 
-export function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
+
+/**
+ * 
+ * @param div the wrapper (parent) div of the target flux module  
+ * @param mdle the target module
+ */
+function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
 
     let attr =  mdle.Factory.RenderView.wrapperDivAttributes || (() => {})
   
@@ -14,7 +20,17 @@ export function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
     Object.entries(styles).forEach( ([k,v]:[string,string])=> div.style.setProperty(k,v))
 }
 
-
+/**
+ * Render a templated layout containing reference to modules' views.
+ * 
+ * The templated layout, in addition to any regular HTML Element, can contains reference wrapper elements to some modules' view.
+ * A reference element is a HTMLDivElement with **id** equal to associated module's id
+ * 
+ * @param templateLayout The template layout
+ * @param modules the list of modules included in *templateLayout*, only the module defining a [[ModuleRendererRun]]
+ * view will be considered
+ * @returns the input div *templateLayout* with wrapper module's div containing the actual modules' view
+ */
 export function renderTemplate( templateLayout: HTMLDivElement, modules: Array<ModuleFlow> ){
 
     let modulesToRender =  modules
@@ -22,22 +38,20 @@ export function renderTemplate( templateLayout: HTMLDivElement, modules: Array<M
     .map( c => [c, new c.Factory.RenderView(c)])
 
     modulesToRender
-    .filter(([mdle,renderer]:[ModuleFlow,any]) => !(mdle instanceof GroupModules.Module) )
+    .filter(([mdle]:[ModuleFlow]) => !(mdle instanceof GroupModules.Module) )
     .forEach( ([mdle,renderer]:[ModuleFlow,any]) => { 
         let wrapperDiv = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
         if(wrapperDiv){
             applyWrapperDivAttributes(wrapperDiv, mdle)
             let divChild = renderer.render()
-            /*divChild.id = mdle.moduleId
-            divChild.classList.add("flux-element")*/
             wrapperDiv.appendChild(divChild) 
             if(mdle["renderedElementDisplayed$"])
                 mdle["renderedElementDisplayed$"].next(divChild)
         }
     })
     modulesToRender
-    .filter(([mdle,renderer]:[ModuleFlow,any]) => mdle instanceof GroupModules.Module )
-    .forEach( ([mdle,renderer]:[ModuleFlow,any]) => { 
+    .filter(([mdle]:[ModuleFlow,any]) => mdle instanceof GroupModules.Module )
+    .forEach( ([mdle]:[ModuleFlow,any]) => { 
         let d = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
         if(d && mdle["renderedElementDisplayed$"] )
             mdle["renderedElementDisplayed$"].next(d)
