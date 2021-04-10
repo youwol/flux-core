@@ -11,7 +11,7 @@ export function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
     attr(mdle) && attr(mdle).class && div.classList.add(attr(mdle).class)
     
     let styles = attr(mdle) && attr(mdle).style ?  attr(mdle).style: {}
-    Object.entries(styles).forEach( ([k,v]:[string,string])=> div.setAttribute(k,v))
+    Object.entries(styles).forEach( ([k,v]:[string,string])=> div.style.setProperty(k,v))
 }
 
 
