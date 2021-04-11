@@ -2,8 +2,8 @@ import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, LoadingGraph
 import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
-import { ErrorLog } from "./module-flow/context";
-import { FluxPack } from "./module-flow/models-base";
+import { ErrorLog } from "./models/context";
+import { FluxPack } from "./models/models-base";
 
 
 export function createObservableFromFetch( request, extractFct = (d) =>d ){

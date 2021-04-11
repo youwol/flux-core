@@ -1,5 +1,5 @@
-import { BuilderView, Flux, Schema } from "../module-flow/decorators"
-import { FluxPack, ModuleFlow, Pipe } from "../module-flow/models-base";
+import { BuilderView, Flux, Schema } from "../models/decorators"
+import { FluxPack, ModuleFlux, Pipe } from "../models/models-base";
 
 
 export let testPack = new FluxPack({
@@ -31,7 +31,7 @@ export namespace ModuleDataEmittor{
         namespace: ModuleDataEmittor, 
         icon: ""
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
         
         output$ : Pipe<unknown>
 

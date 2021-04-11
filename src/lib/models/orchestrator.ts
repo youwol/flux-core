@@ -1,5 +1,5 @@
 import { merge, Observable, ReplaySubject, Subject } from "rxjs";
-import { ModuleFlow } from "./models-base";
+import { ModuleFlux } from "./models-base";
 
 export class StaticStorage{
     
@@ -28,9 +28,9 @@ export class StaticStorage{
     
     addListener(type:string, id:string) {
 
-        this.of(type).set(id, new ReplaySubject<ModuleFlow>(1) )
+        this.of(type).set(id, new ReplaySubject<ModuleFlux>(1) )
         if(this.parentStorage)
-            this.of(type).set(id, new ReplaySubject<ModuleFlow>(1) )
+            this.of(type).set(id, new ReplaySubject<ModuleFlux>(1) )
     }
 
     listener<T>(type:string, id:string) : Observable<T>{
@@ -43,7 +43,7 @@ export class StaticStorage{
     }
 }
 
-export class Orchestrator extends ModuleFlow {
+export class Orchestrator extends ModuleFlux {
 
     staticStorage: StaticStorage
     type: string 
@@ -59,7 +59,7 @@ export class Orchestrator extends ModuleFlow {
     registerOrchestrator(){
 
         if(!this.staticStorage.of(this.type).get(this.id))
-            this.staticStorage.of(this.type).set(this.id, new ReplaySubject<ModuleFlow>(1) )
+            this.staticStorage.of(this.type).set(this.id, new ReplaySubject<ModuleFlux>(1) )
 
         this.staticStorage.of<Subject<Orchestrator>>(this.type).get(this.id).next(this)
     }

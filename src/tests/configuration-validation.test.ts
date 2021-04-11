@@ -1,5 +1,5 @@
-import { ConsistentConfiguration, mergeConfiguration, UnconsistentConfiguration } from "../lib/module-flow/configuration-validation"
-import { Property, Schema } from "../lib/module-flow/decorators"
+import { ConsistentConfiguration, mergeConfiguration, UnconsistentConfiguration } from "../lib/models/configuration-validation"
+import { Property, Schema } from "../lib/models/decorators"
 import { testPack } from "../lib/modules/test-modules"
 
 

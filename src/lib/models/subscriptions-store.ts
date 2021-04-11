@@ -1,8 +1,8 @@
-import { Connection,ModuleFlow } from './models-base';
+import { Connection,ModuleFlux } from './models-base';
 import { Subscription } from 'rxjs';
 
 
-export function subscribeConnections(  modules: Array<ModuleFlow>, connections: Array<Connection>,
+export function subscribeConnections(  modules: Array<ModuleFlux>, connections: Array<Connection>,
     subscriptions: Map<Connection, Subscription>){
 
     let flatInputSlots  = modules.reduce( (acc,e)=> acc.concat(e.inputSlots) , [])
@@ -22,7 +22,7 @@ export class SubscriptionStore{
 
     constructor(){}
 
-    update(modules: Array<ModuleFlow>,createdConnections: Array<Connection>, removedConnections: Array<Connection>) {
+    update(modules: Array<ModuleFlux>,createdConnections: Array<Connection>, removedConnections: Array<Connection>) {
 
         removedConnections.forEach( (c:Connection) => {
             this.subscriptions.get(c).unsubscribe()

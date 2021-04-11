@@ -2,7 +2,7 @@ import { from, Observable, of, Subscription } from "rxjs"
 import { map, mapTo, mergeMap, reduce, tap } from "rxjs/operators"
 import { BuilderRendering, DescriptionBox, ModuleView, Project, LayerTree, Workflow } from "./core-models"
 import { packCore } from "../modules/factory-pack-core"
-import { Adaptor, AdaptorConfiguration, Connection, Factory, FluxPack, ModuleFlow, PluginFlow } from "../module-flow/models-base"
+import { Adaptor, AdaptorConfiguration, Connection, Factory, FluxPack, ModuleFlux, PluginFlux } from "../models/models-base"
 import { IEnvironment } from "../environment"
 import { BuilderRenderingSchema, ConnectionSchema, LayerTreeSchema, ModuleSchema, PluginSchema, ProjectSchema } from "./client-schemas"
 
@@ -160,7 +160,7 @@ export function instantiateProjectModules(
     modulesFactory: Map<string, Factory>, 
     environment: IEnvironment, 
     workflowGetter: () => Workflow
-    ): Array<ModuleFlow>{
+    ): Array<ModuleFlux>{
 
    let modules = modulesData
    .map( moduleData => {
@@ -195,10 +195,10 @@ export function instantiateProjectModules(
 
 export function instantiateProjectPlugins(
     pluginsData: Array<PluginSchema>, 
-    modules: Array<ModuleFlow>, 
+    modules: Array<ModuleFlux>, 
     pluginsFactory:Map<string, Factory>,
     environment: IEnvironment
-    ): Array<PluginFlow<unknown>>{
+    ): Array<PluginFlux<unknown>>{
     
     let plugins = pluginsData.map( pluginData => {
 
@@ -233,7 +233,7 @@ export function instantiateProjectPlugins(
 export function instantiateProjectConnections( 
     allSubscriptions: Map<Connection,Subscription>,
     connectionsData : Array<ConnectionSchema>, 
-    modules: Array<ModuleFlow>
+    modules: Array<ModuleFlux>
     ) : Array<Connection> {
 
     Array.from(allSubscriptions.values()).forEach( (value:any)=> value.unsubscribe() );
@@ -274,7 +274,7 @@ export function instantiateProjectConnections(
 }
 
 export function instantiateProjectBuilderRendering( 
-    modulesData: Array<ModuleFlow>, 
+    modulesData: Array<ModuleFlux>, 
     rendererData: BuilderRenderingSchema 
     ) : BuilderRendering{
     

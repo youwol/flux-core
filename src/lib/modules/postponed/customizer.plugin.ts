@@ -1,5 +1,5 @@
 /*
-import {PluginFlow , SideEffects, ModuleFlow,Connection, SlotRef, InputSlot, Pipe,} from "../module-flow/models-base"
+import {PluginFlux , SideEffects, ModuleFlux,Connection, SlotRef, InputSlot, Pipe,} from "../module-flow/models-base"
 import { Workflow, LayerTree }from "../flux-project/core-models"
 import { packCore } from './factory-pack-core';
 import { SubscriptionStore } from '../module-flow/subscriptions-store';
@@ -51,7 +51,7 @@ export namespace Customizer {
         namespace:      Customizer,
         icon:           svgIcon 
     })
-    export class Module extends PluginFlow<Component.Module>  implements SideEffects{
+    export class Module extends PluginFlux<Component.Module>  implements SideEffects{
 
         customizeFunction:CallableFunction
         outs$ = new Array<Pipe<any>>()

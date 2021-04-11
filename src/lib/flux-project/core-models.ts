@@ -1,4 +1,4 @@
-import { ModuleFlow, PluginFlow, Connection } from '../module-flow/models-base';
+import { ModuleFlux, PluginFlux, Connection } from '../models/models-base';
 
 export class Package{
 
@@ -99,9 +99,9 @@ export class LayerTree {
 
 export class Workflow {
 
-    constructor( public readonly modules : Array<ModuleFlow>,  
+    constructor( public readonly modules : Array<ModuleFlux>,  
                  public readonly connections : Array<Connection> ,                 
-                 public readonly plugins : Array<PluginFlow<any>>,
+                 public readonly plugins : Array<PluginFlux<any>>,
                  public readonly rootLayerTree :LayerTree
                  ){}
 } 

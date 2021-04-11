@@ -1,6 +1,6 @@
 
 import * as rxjs from 'rxjs'
-import { ModuleFlow } from '../module-flow/models-base'
+import { ModuleFlux } from '../models/models-base'
 
 export class ExtensionsObservables{
 
@@ -12,7 +12,7 @@ export class BuilderViewAPI{
 
     static moduleHeaderActions : Object = {}
 
-    static addHeaderAction( id: string, action : (ModuleFlow) => () => any){
+    static addHeaderAction( id: string, action : (ModuleFlux) => () => any){
         BuilderViewAPI.moduleHeaderActions[id] = action
     }
 
@@ -20,7 +20,7 @@ export class BuilderViewAPI{
         delete BuilderViewAPI.moduleHeaderActions[id]
     }
 
-    static getHeaderActions(mdle: ModuleFlow){
+    static getHeaderActions(mdle: ModuleFlux){
         return Object.entries(BuilderViewAPI.moduleHeaderActions)
         .map( ([id,getter]) => [id,getter(mdle)])
         .filter( ([id,action]) => action)

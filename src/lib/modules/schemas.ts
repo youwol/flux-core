@@ -1,4 +1,4 @@
-import { Schema, Property } from "../module-flow/decorators"
+import { Schema, Property } from "../models/decorators"
 import { packCore } from './factory-pack-core'
 
 

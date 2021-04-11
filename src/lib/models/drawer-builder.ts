@@ -1,4 +1,4 @@
-import { ModuleFlow } from './models-base'
+import { ModuleFlux } from './models-base'
 import { createHTMLElement } from '../modules/reactive-html'
 import { FluxExtensionAPIs } from '../extensibility/public-extension-interfaces'
 
@@ -43,7 +43,7 @@ export function createPlug(type, plug, i, vMargin, height, count, plugLength, wi
 }
 
 export function genericModulePlotData({ module , icon, width, vMargin, vStep, inputs, outputs, actions} : 
-    { module : ModuleFlow, icon:any, width: number, vMargin:number, vStep:number, inputs: any, outputs: any, actions:any }){
+    { module : ModuleFlux, icon:any, width: number, vMargin:number, vStep:number, inputs: any, outputs: any, actions:any }){
 
     let headerActions = FluxExtensionAPIs.get("BuilderView").getHeaderActions(module)
     actions = Object.assign({},actions, headerActions)
@@ -108,7 +108,7 @@ export function genericModulePlotData({ module , icon, width, vMargin, vStep, in
 export function genericModulePlot( 
     
     { module , icon, width, vMargin, vStep} : 
-    { module : ModuleFlow, icon:any, width: number, vMargin:number, vStep:number }){
+    { module : ModuleFlux, icon:any, width: number, vMargin:number, vStep:number }){
         
     let data = genericModulePlotData({ module , icon, width, vMargin, vStep,
         inputs:module.inputSlots, outputs:module.outputSlots , actions:{}  })

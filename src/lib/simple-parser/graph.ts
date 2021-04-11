@@ -1,5 +1,5 @@
 import { Branch } from './branch';
-import {Connection, ModuleFlow, PluginFlow } from '../module-flow/models-base';
+import {Connection, ModuleFlux, PluginFlux } from '../models/models-base';
 import {Workflow, LayerTree } from '../flux-project/core-models';
 
 export class Graph{
@@ -8,12 +8,12 @@ export class Graph{
 
     workflow: Workflow
     observers = []
-    constructor( branches: Array<Branch> , public readonly modules: Array<ModuleFlow>, 
+    constructor( branches: Array<Branch> , public readonly modules: Array<ModuleFlux>, 
         public readonly withConnections: Array<Connection> = [], layerTree:LayerTree){
         
         this.branches   = branches        
         let connections = branches.reduce( (acc,b) => acc.concat(this._createConnections(b)), []).concat(withConnections)
-        let plugins     = modules.filter( m => m instanceof PluginFlow) as Array<PluginFlow<any>>
+        let plugins     = modules.filter( m => m instanceof PluginFlux) as Array<PluginFlux<any>>
         this.workflow   = new Workflow([...modules,...plugins],connections,plugins, layerTree)
         this.observers  = branches.reduce( (acc,b) => acc.concat(b.observers), [])
     }

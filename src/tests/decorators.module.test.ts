@@ -1,5 +1,5 @@
 import { Schema, Property, Flux, BuilderView, RenderView } from "../index"
-import { FluxPack, ModuleFlow } from '../lib/module-flow/models-base';
+import { FluxPack, ModuleFlux } from '../lib/models/models-base';
 
 console.log = () =>{}
 
@@ -48,7 +48,7 @@ export namespace MyModule {
         render: (mdle) => { 
             let r = <HTMLDivElement>(document.createElement('div')) ; r.id=mdle.moduleId; return r}
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
 
         constructor(params){ super(params)}
     }
@@ -123,7 +123,7 @@ export namespace MyModule2 {
         namespace: MyModule2,
         render: (mdle) => `<div id='${mdle.moduleId}' ></div>`
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
 
         constructor(params){ super(params)}
     }
@@ -171,7 +171,7 @@ export namespace MyModule3 {
         icon:           "<g id='mymodule-svg-icon' ></g>",
         render:         (mdle) => { let r = document.createElementNS("http://www.w3.org/2000/svg", "rect"); r.id = mdle.moduleId; return r }
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
 
         constructor(params){ super(params)}
     }

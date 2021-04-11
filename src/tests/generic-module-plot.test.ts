@@ -1,5 +1,5 @@
 
-import { ModuleFlow, Pipe,genericModulePlot, freeContract} from '../index'
+import { ModuleFlux, Pipe,genericModulePlot, freeContract} from '../index'
 import { MockEnvironment } from '../lib/environment'
 
 console.log = () =>{}
@@ -11,7 +11,7 @@ export class Input {
 export class Output {
 }
 
-export class Module extends ModuleFlow{
+export class Module extends ModuleFlux{
 
     readonly output$ : Pipe<Output>
 
@@ -70,7 +70,7 @@ test('modulePlot', () => {
 
 
 
-export class Module2 extends ModuleFlow{
+export class Module2 extends ModuleFlux{
 
     readonly output0$ : Pipe<Output>
     readonly output1$ : Pipe<Output>

@@ -1,5 +1,5 @@
 import { Graph } from './graph'
-import { SubscriptionStore } from '../module-flow/subscriptions-store'
+import { SubscriptionStore } from '../models/subscriptions-store'
 import { Subscription } from 'rxjs'
 
 

@@ -1,8 +1,8 @@
-import { Schema, Property, ModuleFlow, Pipe, Cache, ValueKey, PluginFlow, Flux, BuilderView, RenderView, createHTMLElement} from "../index"
+import { Schema, Property, ModuleFlux, Pipe, Cache, ValueKey, PluginFlux, Flux, BuilderView, RenderView, createHTMLElement} from "../index"
 import { Subject, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { freeContract } from "../lib/module-flow/contract";
-import { Context } from "../lib/module-flow/context";
+import { freeContract } from "../lib/models/contract";
+import { Context } from "../lib/models/context";
 import { testPack } from "../lib/modules/test-modules";
 
 
@@ -59,7 +59,7 @@ export namespace ModuleTest{
         namespace: ModuleTest,
         icon: ""
     })
-    export class Module extends ModuleFlow{
+    export class Module extends ModuleFlux{
 
         static dataReceived$ = new Subject()
         readonly output$ : Pipe<Schemas.Output>
@@ -111,7 +111,7 @@ export namespace PluginTest{
         namespace: PluginTest,
         icon: ""
     })
-    export class Module extends PluginFlow<ModuleTest.Module>{
+    export class Module extends PluginFlux<ModuleTest.Module>{
 
         readonly output$ : Pipe<Schemas.Input>
 
@@ -200,7 +200,7 @@ return [{text: "option 1", value: { n : 0 }},
         namespace: DropDown,
         render: (mdle) => renderHtmlElement(mdle)
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
         
         selection$ : any
 
@@ -272,7 +272,7 @@ export namespace Console {
         namespace:      Console,
         icon:           ""
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
         
         constructor(params){ 
             super(params)                        
@@ -314,7 +314,7 @@ export namespace Label{
     @RenderView({ namespace: Label,
         render: (mdle) => renderHtmlElement(mdle)
     })
-    export class Module extends ModuleFlow {
+    export class Module extends ModuleFlux {
         
         value$ : any
         display$ = new ReplaySubject<string>()

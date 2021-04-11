@@ -1,5 +1,5 @@
 import { expect as expect_, expectCount, expectSome, BaseExpectation, 
-    expectAnyOf, expectAllOf, expectAttribute, contract, expectSingle} from "../lib/module-flow/contract"
+    expectAnyOf, expectAllOf, expectAttribute, contract, expectSingle} from "../lib/models/contract"
 
 
 

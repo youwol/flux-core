@@ -2,7 +2,7 @@
 
 import { ModuleTest} from './test-modules'
 import { ModuleConfiguration,GroupModules, Workflow, LayerTree,ModuleView,Connection } from '../index'
-import { SlotRef } from '../lib/module-flow/models-base'
+import { SlotRef } from '../lib/models/models-base'
 console.log = () =>{}
 
 test('empty group module test', () => {

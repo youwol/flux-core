@@ -1,6 +1,6 @@
 
 
-import { ModuleFlow, ModuleRendererBuild, ModuleConfiguration, ModuleRendererRun, FluxPack } from './models-base';
+import { ModuleFlux, ModuleRendererBuild, ModuleConfiguration, ModuleRendererRun, FluxPack } from './models-base';
 import * as rxjs from 'rxjs'
 import 'reflect-metadata'
 import * as _ from 'lodash'
@@ -74,7 +74,7 @@ export function BuilderView(metadata) {
           constructor(){
             super({svgIcon:metadata.icon, Factory:ModuleNamespace})
           }
-          render(mdle:ModuleFlow) {
+          render(mdle:ModuleFlux) {
             let renderElem   = metadata.render(mdle, this.icon() )
             if (typeof renderElem =="string"){
                 let renderingDiv = <HTMLDivElement>(document.createElement('div'))
@@ -94,11 +94,11 @@ export function RenderView(metadata) {
     ModuleNamespace["RenderView"] = 
     class RenderView extends ModuleRendererRun {
 
-      static get wrapperDivAttributes() : (ModuleFlow) => Object {
+      static get wrapperDivAttributes() : (ModuleFlux) => Object {
         return metadata.wrapperDivAttributes
       }
       
-      constructor(public readonly module: ModuleFlow) { 
+      constructor(public readonly module: ModuleFlux) { 
         super() 
       }
 

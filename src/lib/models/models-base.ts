@@ -146,7 +146,7 @@ export class FluxPack{
 export class ModuleError extends Error {
 
     constructor(
-        public readonly mdle: ModuleFlow, 
+        public readonly mdle: ModuleFlux, 
         ...params) {
 
         super(...params)
@@ -160,7 +160,7 @@ export class ModuleError extends Error {
 export class ConfigurationError extends ModuleError{
 
     constructor(
-        mdle: ModuleFlow, 
+        mdle: ModuleFlux, 
         message:string, 
         public readonly status:UnconsistentConfiguration<any>
         ){
@@ -172,7 +172,7 @@ export class ConfigurationError extends ModuleError{
 export class ContractUnfulfilledError extends ModuleError{
 
     constructor(
-        mdle: ModuleFlow,
+        mdle: ModuleFlux,
         message: string, 
         public readonly status: ExpectationStatus<unknown>
         ){
@@ -187,8 +187,8 @@ export class ContractUnfulfilledError extends ModuleError{
  * When creating a new module's type, it has to inherit either directly or indirectly from 
  * this class. 
  * 
- * > In the case of a plugin, see the [[PluginFlow | plugin]] class - they basically 
- * add an attribute 'parentModule' upon ModuleFlow, and usually are associated 
+ * > In the case of a plugin, see the [[PluginFlux | plugin]] class - they basically 
+ * add an attribute 'parentModule' upon ModuleFlux, and usually are associated 
  * to a concept of [[SideEffect]] (when plugin is installed/removed).
  * 
  * The main steps of defining a module are described below.
@@ -227,11 +227,11 @@ export class ContractUnfulfilledError extends ModuleError{
  * 
  * ## Deriving a new module's type
  * 
- * This ModuleFlow's constructor is usually called by forwarding the parameters from 
+ * This ModuleFlux's constructor is usually called by forwarding the parameters from 
  * the constructor of the derived class: 
  * 
  * ```typescript
- *  export class Module extends ModuleFlow {
+ *  export class Module extends ModuleFlux {
  * 
  *       constructor( params ){
  *           super(params) 
@@ -247,7 +247,7 @@ export class ContractUnfulfilledError extends ModuleError{
  *  function myHelpingFunction(){
  *      //...
  *  }
- *  export class Module extends ModuleFlow {
+ *  export class Module extends ModuleFlux {
  * 
  *       constructor( params ){
  *           super( { ...params, ...{ helpers:{'myHelpingFunction': myHelpingFunction}}) 
@@ -258,13 +258,13 @@ export class ContractUnfulfilledError extends ModuleError{
  *  
  * ## Instantiating modules
  * 
- *  The ModuleFlows' constructors are usually not called directly:
+ *  The ModuleFluxs' constructors are usually not called directly:
  * -    in *Flux* app they are called internally
  * -    in unit tests (or custom code), modules are usually instantiated using
  * the function [[instantiateModules]] 
  *
  */
-export abstract class ModuleFlow {
+export abstract class ModuleFlux {
 
     public readonly Factory: Factory
     public readonly moduleId: string
@@ -427,7 +427,7 @@ export abstract class ModuleFlow {
      * An output is usually used in such way:
      * 
      ```typescript
-     * export class Module extends ModuleFlow {
+     * export class Module extends ModuleFlux {
         
      *      result$ : Pipe<number>
      *
@@ -659,7 +659,7 @@ export abstract class ModuleRendererRun {
  * When a new plugin's type is created, it has to inherit either directly or indirectly from 
  * this class.
  */
-export class PluginFlow<T> extends ModuleFlow {
+export class PluginFlux<T> extends ModuleFlux {
 
     readonly parentModule : T = undefined
 

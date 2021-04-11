@@ -1,6 +1,6 @@
 import { Graph } from './graph';
 import { Branch , Step} from './branch';
-import { ModuleFlow , Factory, Connection, PluginFlow} from '../module-flow/models-base';
+import { ModuleFlux , Factory, Connection, PluginFlux} from '../models/models-base';
 import { LayerTree } from '../flux-project/core-models';
 import { IEnvironment, MockEnvironment } from '../environment';
 
@@ -23,7 +23,7 @@ function instantiateModule(
     moduleId : string, 
     args : Factory | [Factory, {[key:string]: any}], 
     commonMdleArgs: {environment?: IEnvironment}
-    ): ModuleFlow{
+    ): ModuleFlux{
 
     let Factory = undefined 
     let configuration = undefined
@@ -56,12 +56,12 @@ function instantiatePlugin(
     moduleId : string, 
     args, 
     commonMdleArgs: {environment?: IEnvironment} = {}
-    ) : PluginFlow<unknown>{
+    ) : PluginFlux<unknown>{
         
     if(args.length==undefined)
         throw Error("Parent module is needed to instantiate a plugin")
     
-    let [factory,parentModule,configData] = retrieveData<[Factory,ModuleFlow,Object]>(args, [(d)=>d.Module,(d)=>d instanceof ModuleFlow, ()=>true])
+    let [factory,parentModule,configData] = retrieveData<[Factory,ModuleFlux,Object]>(args, [(d)=>d.Module,(d)=>d instanceof ModuleFlux, ()=>true])
     let configuration = new factory.Configuration({data: new factory.PersistentData(configData || {} )})
 
     let mdleArguments = Object.assign({},{moduleId, configuration, Factory:factory, parentModule},commonMdleArgs)
@@ -221,8 +221,8 @@ export function parseGraph ( {branches,modules,plugins,adaptors,observers, withC
     
     let all = Object.assign({},modules,plugins || {} )
     Object.entries(all).forEach( ([name,mdle])=> { 
-        if(!(mdle instanceof ModuleFlow)){
-            console.error("flux-lib-graph-helper=>parseGraph: !(mdle instanceof ModuleFlow)" , mdle)
+        if(!(mdle instanceof ModuleFlux)){
+            console.error("flux-lib-graph-helper=>parseGraph: !(mdle instanceof ModuleFlux)" , mdle)
             throw Error(`Module ${name} is not instantiated , 'flux-lib-graph-helper.instantiateModules' can help`)
         }
     })

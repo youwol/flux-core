@@ -1,14 +1,14 @@
 import { LayerTree, Workflow } from '../flux-project/core-models';
-import { ModuleFlow, Connection, SlotRef, Pipe,  
-    instanceOfSideEffects } from '../module-flow/models-base';
+import { ModuleFlux, Connection, SlotRef, Pipe,  
+    instanceOfSideEffects } from '../models/models-base';
 import { Schemas } from './schemas'
-import { Flux, BuilderView, Schema } from '../module-flow/decorators'
+import { Flux, BuilderView, Schema } from '../models/decorators'
 import { createHTMLElement } from './reactive-html'
 import { packCore } from './factory-pack-core';
-import { createPlug, createPlugCircle, genericModulePlotData } from '../module-flow/drawer-builder';
+import { createPlug, createPlugCircle, genericModulePlotData } from '../models/drawer-builder';
 import { StaticStorage } from '../../index';
-import { freeContract } from '../module-flow/contract';
-import { Context } from '../module-flow/context';
+import { freeContract } from '../models/contract';
+import { Context } from '../models/context';
 
 
 export namespace GroupModules {
@@ -83,7 +83,7 @@ export namespace GroupModules {
         render: (mdle, icon) => groupModulePlot({ module: mdle, icon: icon, width: 150, vMargin: 50, vStep: 25 }),
         icon: svgIcon
     })
-    export class Module extends ModuleFlow{
+    export class Module extends ModuleFlux{
 
         public readonly layerId: string
         public readonly workflowGetter: (instance: Module) => Workflow
@@ -162,19 +162,19 @@ export namespace GroupModules {
             return this.workflowGetter(this)
         }
 
-        getAllChildren(): Array<ModuleFlow> {
+        getAllChildren(): Array<ModuleFlux> {
 
             let workflow = this.workflowGetter(this)
             let layer = workflow.rootLayerTree.getLayerRecursive((layer) => layer.layerId == this.layerId)
             let modulesId = layer.getChildrenModules()
             let plugins = workflow.plugins.filter(plugin => {
-                return plugin.parentModule && modulesId.includes(plugin.parentModule.moduleId) // (plugin instanceof PluginFlow) better => but need only one flux-lib-core loaded
+                return plugin.parentModule && modulesId.includes(plugin.parentModule.moduleId) // (plugin instanceof PluginFlux) better => but need only one flux-lib-core loaded
             })
             let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
             return [...modules, ...plugins]
         }
 
-        getDirectChildren(): Array<ModuleFlow> {
+        getDirectChildren(): Array<ModuleFlux> {
 
             let workflow = this.workflowGetter(this)
             let layer = workflow.rootLayerTree.getLayerRecursive( (layer) => layer.layerId == this.layerId)

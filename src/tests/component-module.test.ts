@@ -1,6 +1,6 @@
 import { LayerTree, instantiateModules, parseGraph, Runner,Cache, 
     Connection, SlotRef, Component, renderTemplate, Graph } from '../index'
-import { Context } from '../lib/module-flow/context'
+import { Context } from '../lib/models/context'
 import { ModuleTest, Label } from './test-modules'
 
 test("simple component with label display", (done) =>{

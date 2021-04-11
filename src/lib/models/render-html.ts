@@ -1,4 +1,4 @@
-import { ModuleFlow } from './models-base';
+import { ModuleFlux } from './models-base';
 import { GroupModules } from '../modules/group.module';
 import { Component } from '../modules/component.module';
 
@@ -8,7 +8,7 @@ import { Component } from '../modules/component.module';
  * @param div the wrapper (parent) div of the target flux module  
  * @param mdle the target module
  */
-function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
+function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlux){
 
     let attr =  mdle.Factory.RenderView.wrapperDivAttributes || (() => {})
   
@@ -31,15 +31,15 @@ function applyWrapperDivAttributes(div: HTMLDivElement, mdle:ModuleFlow){
  * view will be considered
  * @returns the input div *templateLayout* with wrapper module's div containing the actual modules' view
  */
-export function renderTemplate( templateLayout: HTMLDivElement, modules: Array<ModuleFlow> ){
+export function renderTemplate( templateLayout: HTMLDivElement, modules: Array<ModuleFlux> ){
 
     let modulesToRender =  modules
     .filter( m=> m.Factory.RenderView !== undefined )
     .map( c => [c, new c.Factory.RenderView(c)])
 
     modulesToRender
-    .filter(([mdle]:[ModuleFlow]) => !(mdle instanceof GroupModules.Module) )
-    .forEach( ([mdle,renderer]:[ModuleFlow,any]) => { 
+    .filter(([mdle]:[ModuleFlux]) => !(mdle instanceof GroupModules.Module) )
+    .forEach( ([mdle,renderer]:[ModuleFlux,any]) => { 
         let wrapperDiv = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
         if(wrapperDiv){
             applyWrapperDivAttributes(wrapperDiv, mdle)
@@ -50,8 +50,8 @@ export function renderTemplate( templateLayout: HTMLDivElement, modules: Array<M
         }
     })
     modulesToRender
-    .filter(([mdle]:[ModuleFlow,any]) => mdle instanceof GroupModules.Module )
-    .forEach( ([mdle]:[ModuleFlow,any]) => { 
+    .filter(([mdle]:[ModuleFlux,any]) => mdle instanceof GroupModules.Module )
+    .forEach( ([mdle]:[ModuleFlux,any]) => { 
         let d = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
         if(d && mdle["renderedElementDisplayed$"] )
             mdle["renderedElementDisplayed$"].next(d)

@@ -2,7 +2,7 @@
 import {Flux,BuilderView, Schema} from '../module-flow/decorators'
 import { GroupModules } from './group.module';
 import { packCore } from './factory-pack-core';
-import { ModuleFlow, PluginFlow, Pipe, uuidv4 } from '../module-flow/models-base';
+import { ModuleFlux, PluginFlux, Pipe, uuidv4 } from '../module-flow/models-base';
 
 import * as _ from 'lodash'
 import { freeContract } from '../module-flow/contract';
@@ -37,7 +37,7 @@ export namespace MapReduce {
                 description: "A map reduce plugin should be associated to a group module"
             },
             Straight: {
-                condition: (mdle:ModuleFlow) => mdle.inputSlots.length==1 &&  mdle.outputSlots.length==1,
+                condition: (mdle:ModuleFlux) => mdle.inputSlots.length==1 &&  mdle.outputSlots.length==1,
                 description: "A map reduce plugin should be associated to a group module with one input and one output"
             }
         }
@@ -46,7 +46,7 @@ export namespace MapReduce {
         namespace: MapReduce,
         icon: icon
     })
-    export class Module extends PluginFlow<GroupModules.Module> {
+    export class Module extends PluginFlux<GroupModules.Module> {
         
         runningCount:{[key:string]: number} = {}
         tmpAggregation: {[key:string]: Array<any>} = {}

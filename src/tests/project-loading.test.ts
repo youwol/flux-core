@@ -1,6 +1,6 @@
 import { Subscription } from "rxjs"
 import { MockEnvironment } from "../lib/environment"
-import { Connection } from "../lib/module-flow/models-base"
+import { Connection } from "../lib/models/models-base"
 import { mockProjectsDB } from "./data/projects-data"
 import { loadProjectDatabase$ } from "../lib/flux-project/loaders"
 import { Project } from "../lib/flux-project/core-models"

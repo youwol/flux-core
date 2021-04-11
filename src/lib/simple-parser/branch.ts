@@ -1,14 +1,14 @@
 
 
-import { ModuleFlow } from '../module-flow/models-base';
+import { ModuleFlux } from '../models/models-base';
 
 type Adaptor = any
 
 export class ConnectionStart{
-    constructor(public readonly module :ModuleFlow, public readonly outputSlot){}
+    constructor(public readonly module :ModuleFlux, public readonly outputSlot){}
 } 
 export class ConnectionEnd{
-    constructor(public readonly module :ModuleFlow, public readonly inputSlot, public readonly adaptor:Adaptor){}
+    constructor(public readonly module :ModuleFlux, public readonly inputSlot, public readonly adaptor:Adaptor){}
 } 
 export class Step{
     constructor(public readonly module, public readonly inputSlot, public readonly outputSlot, public readonly adaptor, public readonly externalObservers ){}
@@ -21,7 +21,7 @@ export class Branch{
     readonly starts : Array<ConnectionStart>
     readonly ends : Array<ConnectionEnd>
     readonly observers : Array<any>
-    readonly modules : Array<ModuleFlow>
+    readonly modules : Array<ModuleFlux>
 
     constructor( ... steps : Array<Step>){
         this.starts      = steps.slice(0,-1).map( step => new ConnectionStart(step.module,step.outputSlot))
@@ -32,6 +32,6 @@ export class Branch{
 }
 
 export namespace Branch{
-    export type ExplicitConnect = [ModuleFlow,string,string]
+    export type ExplicitConnect = [ModuleFlux,string,string]
 
 }

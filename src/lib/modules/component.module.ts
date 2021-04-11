@@ -1,9 +1,9 @@
-import {Flux,BuilderView, RenderView, Property, Schema} from '../module-flow/decorators'
+import {Flux,BuilderView, RenderView, Property, Schema} from '../models/decorators'
 import { GroupModules } from './group.module';
 import { packCore } from './factory-pack-core';
 import { Schemas } from './schemas';
 import { ReplaySubject } from 'rxjs';
-import { renderTemplate } from '../module-flow/render-html';
+import { renderTemplate } from '../models/render-html';
 
 
 

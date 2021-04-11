@@ -1,5 +1,5 @@
 /*
-import { PluginFlow, SideEffects, ModuleFlow, Connection, SlotRef, InputSlot, instanceOfSideEffects, } from "../module-flow/models-base"
+import { PluginFlux, SideEffects, ModuleFlux, Connection, SlotRef, InputSlot, instanceOfSideEffects, } from "../module-flow/models-base"
 import { Workflow, LayerTree } from "../flux-project/core-models"
 import { SubscriptionStore } from '../module-flow/subscriptions-store';
 import { ReplaySubject, Subscription, Observable } from 'rxjs';
@@ -29,15 +29,15 @@ export function duplicateComponent(component: Component.Module, idSuffix: string
         let modules = component.getAllChildren()
         let connections = component.getConnections()
 
-        let newModules : Array<ModuleFlow> = modules
-            .filter((mdle: ModuleFlow) => //!(mdle instanceof GroupModules.Module) 
-                !(mdle instanceof PluginFlow))
-            .map((mdle: ModuleFlow) => new mdle.Factory.Module(Object.assign({}, mdle, {
+        let newModules : Array<ModuleFlux> = modules
+            .filter((mdle: ModuleFlux) => //!(mdle instanceof GroupModules.Module) 
+                !(mdle instanceof PluginFlux))
+            .map((mdle: ModuleFlux) => new mdle.Factory.Module(Object.assign({}, mdle, {
                 moduleId: mdle.moduleId + "_" + idSuffix, workflowGetter, staticStorage })))
 
         let newPlugins =  modules
-        .filter((mdle: ModuleFlow) => mdle instanceof PluginFlow)
-        .map((plugin: PluginFlow<any>) =>{
+        .filter((mdle: ModuleFlux) => mdle instanceof PluginFlux)
+        .map((plugin: PluginFlux<any>) =>{
              let parentModule = newModules.find( mdle => mdle.moduleId == plugin.parentModule.moduleId+ "_" + idSuffix)
              return new plugin.Factory.Module(Object.assign({}, plugin, 
                 { moduleId: plugin.moduleId + "_" + idSuffix,
@@ -106,7 +106,7 @@ export function duplicateComponent(component: Component.Module, idSuffix: string
 }
 
 
-export abstract class RenderViewDecorator extends PluginFlow<Component.Module> implements SideEffects {
+export abstract class RenderViewDecorator extends PluginFlux<Component.Module> implements SideEffects {
 
     decoratedDiv : HTMLDivElement
     originalElement$: Observable<HTMLDivElement>

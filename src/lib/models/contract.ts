@@ -1,4 +1,4 @@
-import { ModuleError, ModuleFlow } from "./models-base"
+import { ModuleError, ModuleFlux } from "./models-base"
 
 
 export class ExpectationStatus<T>{
