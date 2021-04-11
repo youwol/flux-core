@@ -1,3 +1,4 @@
+/*
 import {Flux,BuilderView, Schema} from '../module-flow/decorators'
 import { GroupModules } from './group.module';
 import { packCore } from './factory-pack-core';
@@ -109,3 +110,4 @@ export namespace MapReduce {
         }
     }
 }
+*/

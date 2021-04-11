@@ -1,4 +1,4 @@
-
+/*
 import {PluginFlow , SideEffects, ModuleFlow,Connection, SlotRef, InputSlot, Pipe,} from "../module-flow/models-base"
 import { Workflow, LayerTree }from "../flux-project/core-models"
 import { packCore } from './factory-pack-core';
@@ -78,3 +78,4 @@ export namespace Customizer {
     }
 
 }
+*/

@@ -1,4 +1,4 @@
-
+/*
 import { Subject } from 'rxjs';
 import { packCore } from './factory-pack-core';
 import { GroupModules } from './group.module';
@@ -39,12 +39,12 @@ return ( {data, context, instanceIndex}) => 'replica_'+instanceIndex
         })
         innerContextName: string
 
-        /*@Property({
-            description:"View definition",
-            type:'code'
-        })
-        viewDefinitions: string | ( (data: CellData) => HTMLReactiveElement )
-        */
+        //@Property({
+        //    description:"View definition",
+        //    type:'code'
+        //})
+        //viewDefinitions: string | ( (data: CellData) => HTMLReactiveElement )
+        
 
         constructor({innerContextName, replicaIdGenerator}:
             {innerContextName?:string, replicaIdGenerator?:string}={}) {
@@ -134,3 +134,4 @@ return ( {data, context, instanceIndex}) => 'replica_'+instanceIndex
         throw Error('Component-replica@decorate not implemented')
     }
 }
+*/

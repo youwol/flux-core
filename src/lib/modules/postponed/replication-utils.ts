@@ -1,4 +1,4 @@
-
+/*
 import { PluginFlow, SideEffects, ModuleFlow, Connection, SlotRef, InputSlot, instanceOfSideEffects, } from "../module-flow/models-base"
 import { Workflow, LayerTree } from "../flux-project/core-models"
 import { SubscriptionStore } from '../module-flow/subscriptions-store';
@@ -14,8 +14,7 @@ import { Context } from "../module-flow/context";
 
 export function duplicateComponent(component: Component.Module, idSuffix: string, parentStorage): Component.Module {
 
-    /* Not sure how this function is behaving in case fo nested components/groups 
-    */
+    // Not sure how this function is behaving in case fo nested components/groups 
     let staticStorage = new StaticStorage(idSuffix,parentStorage)
     let clonePatchLayerTree = (layerTree: LayerTree, filter = (mdleId: string) => true): LayerTree =>
         new LayerTree(layerTree.layerId + "_" + idSuffix, layerTree.title, layerTree.children.map(c => clonePatchLayerTree(c, filter)),
@@ -31,7 +30,8 @@ export function duplicateComponent(component: Component.Module, idSuffix: string
         let connections = component.getConnections()
 
         let newModules : Array<ModuleFlow> = modules
-            .filter((mdle: ModuleFlow) => /*!(mdle instanceof GroupModules.Module) &&*/ !(mdle instanceof PluginFlow))
+            .filter((mdle: ModuleFlow) => //!(mdle instanceof GroupModules.Module) 
+                !(mdle instanceof PluginFlow))
             .map((mdle: ModuleFlow) => new mdle.Factory.Module(Object.assign({}, mdle, {
                 moduleId: mdle.moduleId + "_" + idSuffix, workflowGetter, staticStorage })))
 
@@ -46,12 +46,12 @@ export function duplicateComponent(component: Component.Module, idSuffix: string
 
         [...newModules, ...newPlugins].filter( m => instanceOfSideEffects(m) ).map( m => m.apply())
 
-        let componentPlugins = []/*component.getWorkflow()
-        .plugins.filter( mdle => mdle.parentModule===component && !(mdle instanceof ComponentReplica.Module) )
-        */
-        let newComponentPlugins = [] /*componentPlugins.map( mdle=>{
-            return new mdle.Factory.Module(Object.assign({}, mdle, {moduleId: mdle.moduleId +"_"+idSuffix, parentModule:newComponent} )) 
-        })*/
+        let componentPlugins = []//component.getWorkflow()
+        //.plugins.filter( mdle => mdle.parentModule===component && !(mdle instanceof ComponentReplica.Module) )
+        
+        let newComponentPlugins = [] //componentPlugins.map( mdle=>{
+        //   return new mdle.Factory.Module(Object.assign({}, mdle, {moduleId: mdle.moduleId +"_"+idSuffix, parentModule:newComponent} )) 
+        //})
 
         let newInternalConnections = connections.internals.map((c: Connection) =>
             new Connection(new SlotRef(c.start.slotId, c.start.moduleId + "_" + idSuffix),
@@ -295,3 +295,4 @@ export function cloneComponentHtml(mdle: Component.Module, layout: HTMLDivElemen
 }
 
 
+*/

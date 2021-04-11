@@ -56,7 +56,7 @@ test('load simple project', (done) => {
         expect(packages[0].name).toEqual("@youwol/flux-core")
         expect(packages[1].name).toEqual("flux-test")
          
-        expect(modulesFactory.size).toEqual(11)         
+        expect(modulesFactory.size).toEqual(8)         
         expect(modulesFactory.has('{"module":"GroupModules","pack":"@youwol/flux-core"}')).toBeTruthy()
         expect(modulesFactory.has('{"module":"ModuleTest","pack":"flux-test"}')).toBeTruthy()
         expect(modulesFactory.has('{"module":"PluginTest","pack":"flux-test"}')).toBeTruthy()
