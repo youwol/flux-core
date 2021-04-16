@@ -1,4 +1,8 @@
 
+
+/**
+ * @category schemas
+ */
 export interface DescriptionBoxSchema{
 
     descriptionBoxId: string
@@ -10,6 +14,9 @@ export interface DescriptionBoxSchema{
     }
 }
 
+/**
+ * @category schemas
+ */
 export interface ModuleViewSchema{
 
     moduleId: string
@@ -17,12 +24,18 @@ export interface ModuleViewSchema{
     yWorld: number
 }
 
+/**
+ * @category schemas
+ */
 export interface ConnectionViewSchema{
 
     connectionId: string
     wireless: boolean
 }
 
+/**
+ * @category schemas
+ */
 export interface ModuleSchema{
 
     moduleId: string
@@ -30,18 +43,27 @@ export interface ModuleSchema{
     configuration: { title: string, description: string, data: {[key:string]: any} }
 }
 
+/**
+ * @category schemas
+ */
 export interface PluginSchema extends ModuleSchema {
 
     parentModuleId: string
 }
 
+/**
+ * @category schemas
+ */
 export interface ConnectionSchema{
 
     start: { moduleId: string, slotId: string}
     end: { moduleId: string, slotId: string}
-    adaptor?: { adaptorId: string, configuration: { title: string, description: string, data: {[key:string]: any} } }
+    adaptor?: { adaptorId: string, mappingFunction: string } 
 }
 
+/**
+ * @category schemas
+ */
 export interface LayerTreeSchema{
 
     layerId: string,
@@ -50,6 +72,9 @@ export interface LayerTreeSchema{
     children: Array<LayerTreeSchema>
 }
 
+/**
+ * @category schemas
+ */
 export interface WorkflowSchema{
 
     modules:Array<ModuleSchema>,
@@ -58,6 +83,9 @@ export interface WorkflowSchema{
     rootLayerTree : LayerTreeSchema
 }
 
+/**
+ * @category schemas
+ */
 export interface LoadingGraphSchema{
 
     definition: Array<Array<[string,string]>>
@@ -65,6 +93,9 @@ export interface LoadingGraphSchema{
     lock: Array<{name:string, version: string, id: string, type: string}>
 }
 
+/**
+ * @category schemas
+ */
 export interface RequirementsSchema{
     fluxComponents: Array<string>
     fluxPacks: Array<string>
@@ -72,17 +103,26 @@ export interface RequirementsSchema{
     loadingGraph: LoadingGraphSchema
 }
 
+/**
+ * @category schemas
+ */
 export interface BuilderRenderingSchema{
     descriptionsBoxes: Array<DescriptionBoxSchema>,
     modulesView:Array<ModuleViewSchema>,
     connectionsView:Array<ConnectionViewSchema>
 }
 
+/**
+ * @category schemas
+ */
 export interface RunnerRenderingSchema{
     layout: string,
     style: string
 }
 
+/**
+ * @category schemas
+ */
 export interface ProjectSchema{
 
     name: string

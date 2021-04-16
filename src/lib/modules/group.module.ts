@@ -100,7 +100,7 @@ export namespace GroupModules {
             this.staticStorage = params.staticStorage
             this.layerId = params.layerId
             this.workflowGetter = params.workflowGetter
-            let staticConf = this.getConfiguration<PersistentData>()
+            let staticConf = this.getPersistentData<PersistentData>()
 
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
 
@@ -263,7 +263,7 @@ export namespace GroupModules {
     }
 
     export function groupModulePlot({ module, icon, width, vStep }:
-        { module: Module, icon: any, width: number, vMargin: number, vStep: number }): HTMLElement {
+        { module: Module, icon: any, width: number, vMargin: number, vStep: number }): SVGElement {
 
         let data = genericModulePlotData({
             module,
@@ -286,7 +286,7 @@ export namespace GroupModules {
                 }
             }
         })
-        return createHTMLElement({ data, subscriptions: [], namespace: "svg" })
+        return createHTMLElement({ data, subscriptions: [], namespace: "svg" }) as unknown as SVGElement
     }
 
 

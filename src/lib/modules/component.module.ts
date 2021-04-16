@@ -39,7 +39,7 @@ export namespace Component {
     })
     @RenderView({
         namespace: Component,
-        render: (mdle) => renderHtmlElement(mdle)
+        render: (mdle: Module) => renderHtmlElement(mdle)
     })
     export class Module extends GroupModules.Module {
 

@@ -1,8 +1,27 @@
 import { flattenSchemaWithValue } from "./decorators"
 import * as _ from 'lodash'
 
+
+/**
+ * ## ConfigurationStatus
+ * 
+ * Base class for both [[ConsistentConfiguration]] and [[InconsistentConfiguration]].
+ * 
+ * It is the returned value of the function [[mergeConfiguration]].
+ * 
+ * @param T type of the module's PersistentData 
+ */
 export class ConfigurationStatus<T>{
 
+    /**
+     * 
+     * @param original static persistent data (e.g. in Flux applications: the one defined from the settings panel of the module)
+     * @param newAttributes the attributes that have been requested to be updated (e.g. those returned in the configuration part
+     * returned by an adaptor)
+     * @param result the result of merging *original* with *newAttributes*
+     * @param intrus a list of intrus: fields in *newAttributes* that are actually not part of the original persistent data.
+     * The values of the array are the path to the attributes.
+     */
     constructor(
         public readonly original: T, 
         public readonly newAttributes, 
@@ -11,8 +30,24 @@ export class ConfigurationStatus<T>{
         ){}
 }
 
+/**
+ * ## ConsistentConfiguration
+ * 
+ * The case of a successful [[mergeConfiguration]]: no errors, eventually some intrus.
+ * 
+ * Intrus are the fields in *newAttributes* that are actually not part of the *original* data structure.
+ */
 export class ConsistentConfiguration<T> extends ConfigurationStatus<T>{
 
+    /**
+     * 
+     * @param original static persistent data (in Flux: the one defined in the settings panel of the module)
+     * @param newAttributes the attributes that have been requested to be updated (e.g. those returned in the configuration part
+     * returned by an adaptor)
+     * @param result the result of merging *original* with *newAttributes*
+     * @param intrus a list of intrus: fields in *newAttributes* that are actually not part of the *original* data structure.
+     * The values of the array are the path to the attributes.
+     */
     constructor( 
         original: T, 
         newAttributes,
@@ -22,8 +57,32 @@ export class ConsistentConfiguration<T> extends ConfigurationStatus<T>{
         }
 }
 
-export class UnconsistentConfiguration<T> extends ConfigurationStatus<T>{
+/**
+ * ## InconsistentConfiguration
+ * 
+ * The case of a failed [[mergeConfiguration]]: merging errors exist and eventually some intrus.
+ * 
+ * Intrus are the fields in *newAttributes* that are actually not part of the *original* data structure.
+ * 
+ * Errors can arise in two cases:
+ * -    when an attributes in *newAttributes* exist in the *original* data structure
+ * but types do not align.
+ * -    when some attributes in the *original* data structure disappear because of the merge
+ * 
+ */
+export class InconsistentConfiguration<T> extends ConfigurationStatus<T>{
 
+    /**
+     * 
+     * @param original static persistent data (in Flux: the one defined in the settings panel of the module)
+     * @param newAttributes the attributes that have been requested to be updated (e.g. those returned in the configuration part
+     * returned by an adaptor)
+     * @param result the result of merging *original* with *newAttributes*
+     * @param intrus a list of intrus: fields in *newAttributes* that are actually not part of the persistent data.
+     * The values of the array are the path to the attributes.
+     * @param missings a list of missing attributes in *result*, the values of the array are the path to these attributes.
+     * @param typeErrors the description of the errors
+     */
     constructor( 
         original: T, 
         newAttributes,
@@ -35,7 +94,10 @@ export class UnconsistentConfiguration<T> extends ConfigurationStatus<T>{
         }
 }
 
-
+/**
+ * 
+ * @Hidden
+ */
 export function findIntrus( prefix, object, reference) : Array<string> {
 
     let firstLayerIntrus =  Object.entries(object)
@@ -51,7 +113,10 @@ export function findIntrus( prefix, object, reference) : Array<string> {
         .reduce( (acc,e)=> acc.concat(e), []) ) 
 }
 
-
+/**
+ * 
+ * @Hidden
+ */
 export function isConsistent(key, val, schema){
     // We may want to deal with code in order to accept javascript function
     // if(schema.metadata.type=="code")
@@ -81,6 +146,10 @@ export function isConsistent(key, val, schema){
     return true
 }
 
+/**
+ * 
+ * @Hidden
+ */
 export function typeErrors(flattened): Array<{attributeName:string, actualValue:string, expectedType:string, error: string}>{
 
     return Object.entries( flattened)
@@ -90,7 +159,30 @@ export function typeErrors(flattened): Array<{attributeName:string, actualValue:
     .map( d => ({attributeName:d[1], actualValue:d[2], expectedType:d[3], error: d[4]}) )
 }
 
-
+/**
+ * ## mergeConfiguration
+ * 
+ * The function mergeConfiguration is in charge to provide the **dynamic configuration**
+ * to module's processing functions as well as to provide the description of eventual errors/intrus.
+ * 
+ * The **dynamic configuration** is obtained by merging the **static configuration**
+ * (the one constructed from [[ModuleConfiguration]]) with eventual dynamic values -
+ * e.g. those provided by the configuration returned by an [[Adaptor]].
+ *  
+ * Errors can arise in two cases:
+ * -    when an attributes in *newAttributes* exist in the *original* data structure
+ * but types do not align.
+ * -    when some attributes in the *original* data structure disappear because of the merge
+ * 
+ * Intrus are the fields in *newAttributes* that are actually not part of the *original* data structure.
+ * 
+ * > ❕ The *persistentData* provided as argument to the function should have been decorated 
+ * > using [[Schema]] and [[Property]] at construction.
+ * 
+ * @param persistentData persistent data of the module ([[ModuleFlux.getPersistentData]])
+ * @param newAttributes dynamic attributes - e.g. the configuration part returned by an adaptor
+ * @returns status of the result, either a [[ConsistentConfiguration]] or a [[InconsistentConfiguration]]
+ */
 export function mergeConfiguration<T extends Object>(
     persistentData: T, 
     newAttributes?: {[key:string]: unknown},
@@ -115,7 +207,7 @@ export function mergeConfiguration<T extends Object>(
     let errorsTypeNew = typeErrors(flattenedNew)
     */
     if( errorsType.length + missings.length )
-        return new UnconsistentConfiguration(persistentData, newAttributes, mergedConfig, intrus, missings, errorsType)
+        return new InconsistentConfiguration(persistentData, newAttributes, mergedConfig, intrus, missings, errorsType)
     
     let nonCodeIntrus = intrus.filter( (intru:string) => {
         let key = intru.split('/')[1]

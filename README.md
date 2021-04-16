@@ -45,3 +45,10 @@ The primary usage of *flux-core* is to provide the foundation to create modules 
 the *YouWol*'s low code solution *Flux*. An illustrated and commented example can be 
 found [here](https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts)
 
+## Documentation
+
+The documentation of the code is still a work in progress, in particular it is not yet as well organized
+as we would like it to be. 
+
+For new comers we recommend to start with the page **core-concepts** referenced
+in the right panel (when opening the page /dist/docs/index.html after having generated the documentation). 

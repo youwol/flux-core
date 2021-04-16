@@ -2,13 +2,13 @@ import {AUTO_GENERATED} from '../auto_generated'
 import { Context, ErrorLog } from '../lib/models/context'
 import { expectAnyOf, expectAttribute, expect as expect_, expectCount } from '../lib/models/contract'
 import { BuilderView, Flux, Property, RenderView, Schema } from '../lib/models/decorators'
-import { ContractUnfulfilledError, FluxPack, ModuleFlux, Pipe } from '../lib/models/models-base'
+import {  FluxPack, ModuleFlux, Pipe } from '../lib/models/models-base'
 import { instantiateModules, parseGraph } from '../lib/simple-parser/parser'
 import { Runner } from '../lib/simple-parser/runner'
 import { attr$, render } from "@youwol/flux-view"
 import { renderTemplate } from '../lib/models/render-html'
 import { filter, map, skip, take } from 'rxjs/operators'
-import { ConfigurationError } from '..'
+import { ConfigurationError, ContractUnfulfilledError } from '..'
 import { ModuleDataEmittor } from '../lib/modules/test-modules'
 console.log = () => {}
 /*

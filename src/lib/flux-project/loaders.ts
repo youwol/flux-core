@@ -2,7 +2,7 @@ import { from, Observable, of, Subscription } from "rxjs"
 import { map, mapTo, mergeMap, reduce, tap } from "rxjs/operators"
 import { BuilderRendering, DescriptionBox, ModuleView, Project, LayerTree, Workflow } from "./core-models"
 import { packCore } from "../modules/factory-pack-core"
-import { Adaptor, AdaptorConfiguration, Connection, Factory, FluxPack, ModuleFlux, PluginFlux } from "../models/models-base"
+import { Adaptor, Connection, Factory, FluxPack, ModuleFlux, PluginFlux } from "../models/models-base"
 import { IEnvironment } from "../environment"
 import { BuilderRenderingSchema, ConnectionSchema, LayerTreeSchema, ModuleSchema, PluginSchema, ProjectSchema } from "./client-schemas"
 
@@ -198,7 +198,7 @@ export function instantiateProjectPlugins(
     modules: Array<ModuleFlux>, 
     pluginsFactory:Map<string, Factory>,
     environment: IEnvironment
-    ): Array<PluginFlux<unknown>>{
+    ): Array<PluginFlux<ModuleFlux>>{
     
     let plugins = pluginsData.map( pluginData => {
 
@@ -264,8 +264,7 @@ export function instantiateProjectConnections(
         if(!connection.adaptor)
             return new Connection(slotOutput, slotInput)
         
-        let adaptorConf = connection.adaptor.configuration as AdaptorConfiguration
-        let adaptor = new Adaptor(connection.adaptor.adaptorId, adaptorConf)
+        let adaptor = new Adaptor(connection.adaptor.adaptorId, connection.adaptor.mappingFunction)
         return new Connection(slotOutput,slotInput, adaptor)
     })
     .filter( c => c)

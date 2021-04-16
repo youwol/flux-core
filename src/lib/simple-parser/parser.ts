@@ -56,7 +56,7 @@ function instantiatePlugin(
     moduleId : string, 
     args, 
     commonMdleArgs: {environment?: IEnvironment} = {}
-    ) : PluginFlux<unknown>{
+    ) : PluginFlux<ModuleFlux>{
         
     if(args.length==undefined)
         throw Error("Parent module is needed to instantiate a plugin")

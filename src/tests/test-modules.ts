@@ -1,4 +1,4 @@
-import { Schema, Property, ModuleFlux, Pipe, Cache, ValueKey, PluginFlux, Flux, BuilderView, RenderView, createHTMLElement} from "../index"
+import { Schema, Property, ModuleFlux, Pipe, Cache, ValueKey, PluginFlux, Flux, BuilderView, RenderView, createHTMLElement, Factory} from "../index"
 import { Subject, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { freeContract } from "../lib/models/contract";
@@ -77,9 +77,11 @@ export namespace ModuleTest{
             this.output$ = this.addOutput<Schemas.Output>({id:"output"})
         }
 
-        square({data, configuration, context}, {cache} : {cache:Cache} ){
-            console.log("azazaz")
-            let [d, fromCache] = cache.getOrCreate(new ValueKey("value",data.value), () => new Schemas.Output( {value:data.value*data.value} ) )
+        square({data, context}, {cache} : {cache:Cache} ){
+            let [d, fromCache] = cache.getOrCreateWithStatus(
+                new ValueKey("value",data.value),
+                () => new Schemas.Output( {value:data.value*data.value} ) 
+            )
             Module.dataReceived$.next({moduleId:this.moduleId, data:data})
             context.withChild(
                 "send with updated user's context",
@@ -129,11 +131,11 @@ export namespace PluginTest{
         }
 
         square(
-            {data, configuration, context} : {data: Schemas.Input, configuration: PersistentData, context: Context}
+            {data, context} : {data: Schemas.Input, context: Context}
             , {cache} : {cache:Cache}
             ){
             
-            let [d, fromCache] = cache.getOrCreate(
+            let [d, fromCache] = cache.getOrCreateWithStatus(
                 new ValueKey("value",data.value), 
                 () => new Schemas.Output( {value:data.value*data.value} ) 
             )
@@ -198,7 +200,7 @@ return [{text: "option 1", value: { n : 0 }},
     })
     @RenderView({
         namespace: DropDown,
-        render: (mdle) => renderHtmlElement(mdle)
+        render: (mdle: Module) => renderHtmlElement(mdle)
     })
     export class Module extends ModuleFlux {
         
@@ -207,7 +209,7 @@ return [{text: "option 1", value: { n : 0 }},
         constructor( params ){
             super(params) 
 
-            let conf : any = this.getConfiguration()
+            let conf : any = this.getPersistentData()
             let items = conf.getItems()
 
             this.selection$ = this.addOutput({id:"selection"} )
@@ -224,7 +226,7 @@ return [{text: "option 1", value: { n : 0 }},
     //-------------------------------------------------------------------------
 
     function renderHtmlElement(mdle: Module) {
-        let conf  : any = mdle.getConfiguration()
+        let conf  : any = mdle.getPersistentData()
         let div = <HTMLDivElement>(document.createElement('div'))
         let select = <HTMLSelectElement>(document.createElement('select'))
         div.appendChild(select)
@@ -312,7 +314,7 @@ export namespace Label{
     @Flux({ pack: testPack, namespace: Label, id: "Label", displayName: "Label", description: "Label" })
     @BuilderView({ namespace: Label, icon: ""})
     @RenderView({ namespace: Label,
-        render: (mdle) => renderHtmlElement(mdle)
+        render: (mdle: Module) => renderHtmlElement(mdle)
     })
     export class Module extends ModuleFlux {
         
@@ -325,7 +327,7 @@ export namespace Label{
             this.addInput({ id: "value", description:"", contract: freeContract(), onTriggered: this.set })
 
             this.value$ = this.addOutput({id:"value"})
-            //this.set(this.getConfiguration<PersistentData>().text)
+            //this.set(this.getPersistentData<PersistentData>().text)
         }
 
         set( {data , configuration, context} ) {   

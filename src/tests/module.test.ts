@@ -1,7 +1,7 @@
 import  * as operators from 'rxjs/operators'
 
 import {ModuleTest, PluginTest} from './test-modules'
-import { ModuleConfiguration,SlotRef, Connection, Adaptor, AdaptorConfiguration } from '../index'
+import { ModuleConfiguration,SlotRef, Connection, Adaptor } from '../index'
 
 console.log = () =>{}
 
@@ -16,7 +16,7 @@ test('Module', (done) => {
     let environment = {}
     let Factory = ModuleTest
     let mdle = new ModuleTest.Module( { moduleId, configuration, Factory, environment })
-    mdle.cache.maxCount = 2
+    mdle.cache.setCapacity(2)
 
     expect(mdle.moduleId).toEqual('toto')
     expect(mdle.inputSlots.length).toEqual(1)
@@ -46,10 +46,10 @@ test('Module', (done) => {
         done()
     })
 
-    let d = {connection:c, data :{ data:{ value: 2 } , configuration: {}, context:{}}}
+    let d = {connection:c, message :{ data:{ value: 2 } , configuration: {}, context:{}}}
     mdle.inputSlots[0].subscribeFct(d ) 
     mdle.inputSlots[0].subscribeFct(d ) 
-    mdle.inputSlots[0].subscribeFct({connection:c, data :{ data:{ value: 2 } , configuration: {}, context:{}}} ) 
+    mdle.inputSlots[0].subscribeFct({connection:c, message :{ data:{ value: 2 } , configuration: {}, context:{}}} ) 
 
 })
 
@@ -69,7 +69,7 @@ test('Module with adaptor', (done) => {
 
     expect(mdle.moduleId.split('-').length).toEqual(5)
 
-    mdle.cache.maxCount = 2
+    mdle.cache.setCapacity(2)
 
     let code = ` 
     return ({data,configuration,context}) => ({
@@ -78,9 +78,7 @@ test('Module with adaptor', (done) => {
         configuration: configuration
     })
     `
-    let adaptConf = new AdaptorConfiguration("simple adaptor", "description", { code })
-
-    let c = new Connection(new SlotRef("id0","module0"),new SlotRef("id1","module1"), new Adaptor("adapt0",adaptConf))
+    let c = new Connection(new SlotRef("id0","module0"),new SlotRef("id1","module1"), new Adaptor("adapt0", code))
 
     mdle.outputSlots[0].observable$.pipe(
         operators.take(1)
@@ -89,7 +87,7 @@ test('Module with adaptor', (done) => {
         expect(context.fromCache).toEqual(false)
         done()
     })
-    mdle.inputSlots[0].subscribeFct({connection:c, data :{ data:{ value: 2 } , configuration: {}, context:{}}} ) 
+    mdle.inputSlots[0].subscribeFct({connection:c, message :{ data:{ value: 2 } , configuration: {}, context:{}}} ) 
 
 })
 

@@ -3,7 +3,7 @@ import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
 import { ErrorLog } from "./models/context";
-import { FluxPack } from "./models/models-base";
+import { FluxPack, HostCommandRequest } from "./models/models-base";
 
 
 export function createObservableFromFetch( request, extractFct = (d) =>d ){
@@ -31,6 +31,8 @@ export interface IEnvironment{
     
     errors$ : Subject<ErrorLog>
     
+    hostCommandRequest$ : Subject<HostCommandRequest>
+    
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
     fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>
@@ -51,7 +53,7 @@ export class Environment implements IEnvironment{
     public readonly renderingWindow: Window
 
     public readonly errors$ = new ReplaySubject<ErrorLog>()
-
+    public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
     public readonly console: IConsole
 
     constructor( data:
@@ -116,7 +118,8 @@ export class MockEnvironment implements IEnvironment{
     public readonly console: IConsole
 
     public readonly errors$ = new ReplaySubject<ErrorLog>()
-
+    public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
+    
     constructor(
         data: {
             projectsDB?: {[key:string]: ProjectSchema},

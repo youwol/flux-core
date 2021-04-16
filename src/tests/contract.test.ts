@@ -1,5 +1,5 @@
 import { expect as expect_, expectCount, expectSome, BaseExpectation, 
-    expectAnyOf, expectAllOf, expectAttribute, contract, expectSingle} from "../lib/models/contract"
+    expectAnyOf, expectAllOf, expectAttribute, contract, expectSingle, expectInstanceOf} from "../lib/models/contract"
 
 
 
@@ -24,7 +24,7 @@ test('straightLeafNumber', () => {
     let straightLeafNumber = expect_<number>({
         description: `straightLeafNumber`,
         when: (inputData) => typeof (inputData) == 'number',
-        mapTo: (accData) => accData
+        normalizeTo: (accData) => accData
     }) as BaseExpectation<number>
 
     let scenarios = [ 
@@ -50,7 +50,7 @@ test('permissiveLeafNumber; no allOf', () => {
             expect_<number>({
                 description: 'stringCompatible',
                 when: (inputData) => typeof (inputData) == 'string' && !isNaN(parseFloat(inputData)),
-                mapTo: (accData: string) => parseFloat(accData)
+                normalizeTo: (accData: string) => parseFloat(accData)
             })
         ]
     }) as BaseExpectation<number>
@@ -86,13 +86,13 @@ test('permissiveLeafNumber; with allOf', () => {
                     expect_({
                         description: 'can be converted in float',
                         when: (inputData: string) => !isNaN(parseFloat(inputData)),
-                        mapTo: (inputData) => parseFloat(inputData)
+                        normalizeTo: (inputData) => parseFloat(inputData)
                     }),
                 ], 
-                mapTo: (data) => data[1]
+                normalizeTo: (data) => data[1]
             })
         ],
-        mapTo: (accData) => accData
+        normalizeTo: (accData) => accData
     }) as BaseExpectation<number>
 
     let scenarios = [ 
@@ -119,7 +119,7 @@ test('permissiveNumber', () => {
             ExpectCollec.permissiveLeafNumber,
             expectAttribute({ name: 'value', when: ExpectCollec.permissiveLeafNumber })
         ],
-        mapTo: (accData) => accData
+        normalizeTo: (accData) => accData
     }) as BaseExpectation<number>
 
     let scenarios = [ 
@@ -144,7 +144,7 @@ test('permissiveNumber', () => {
 
 test('two Numbers; raw', () => {
 
-    let twoNumbers = expectAllOf<number>({
+    let twoNumbers = expectAllOf<number[]>({
         description: `two numbers`,
         when: [
             expect_({
@@ -156,7 +156,7 @@ test('two Numbers; raw', () => {
                 when: (elems: Array<any>) => {
                     return elems.filter( d => ExpectCollec.permissiveNumber.resolve(d).succeeded ).length == 2
                 },
-                mapTo: (elems: Array<any>) => {
+                normalizeTo: (elems: Array<any>) => {
                     return elems
                     .map( d => ExpectCollec.permissiveNumber.resolve(d))
                     .filter( d => d.succeeded)
@@ -164,8 +164,8 @@ test('two Numbers; raw', () => {
                 },
             })
         ],
-        mapTo: (d) => d[1]
-    }) as BaseExpectation<number>
+        normalizeTo: (d) => d[1]
+    })
 
     let scenarios = [ 
         {data:5, succeeded:false, value:undefined},
@@ -204,6 +204,26 @@ test('2 numbers', () => {
         expect(value).toEqual( scenario.value)
     })
 })
+
+
+test('instance of', () => {
+
+    let material = expectInstanceOf<Material>( {typeName: 'Material', Type:Material, attNames:['mat', 'material']})
+    let matInstance = new Material()
+    let scenarios = [ 
+        {data:matInstance, succeeded:true, value:matInstance},
+        {data:{ 'mate': matInstance}, succeeded:false, value: undefined},
+        {data:{ 'mat': matInstance}, succeeded:true, value: matInstance},
+        {data:{ 'material': matInstance}, succeeded:true, value: matInstance}
+    ]
+
+    scenarios.map( (scenario) => {
+        let {succeeded, value} = material.resolve(scenario.data)
+        expect(succeeded).toEqual( scenario.succeeded)
+        expect(value).toEqual( scenario.value)
+    })
+})
+
 
 
 test('some numbers', () => {

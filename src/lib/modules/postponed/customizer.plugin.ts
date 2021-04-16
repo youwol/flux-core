@@ -58,7 +58,7 @@ export namespace Customizer {
         
         constructor(params){ 
             super(params)
-            let config = this.getConfiguration<PersistentData>()
+            let config = this.getPersistentData<PersistentData>()
 
             this.customizeFunction =  new Function(config.code)()
 

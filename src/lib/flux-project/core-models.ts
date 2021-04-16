@@ -1,5 +1,9 @@
+
 import { ModuleFlux, PluginFlux, Connection } from '../models/models-base';
 
+/**
+ * @category models
+ */
 export class Package{
 
     constructor(public readonly id: string,
@@ -10,13 +14,18 @@ export class Package{
     }
 }
 
-
+/**
+ * @category models
+ */
 export class PackageId{
 
     constructor( public readonly id: any ){
     }
 }
 
+/**
+ * @category models
+ */
 export class ModuleView{
 
     constructor(public readonly moduleId : string, 
@@ -25,6 +34,9 @@ export class ModuleView{
         public readonly Factory: any ){}
 }
 
+/**
+ * @category models
+ */
 export class DescriptionBoxProperties{
 
     constructor(public readonly color){
@@ -32,6 +44,9 @@ export class DescriptionBoxProperties{
     }
 }
 
+/**
+ * @category models
+ */
 export class DescriptionBox{
 
     constructor( public readonly descriptionBoxId: string,
@@ -41,6 +56,9 @@ export class DescriptionBox{
                  public readonly properties: DescriptionBoxProperties ){}
 }
 
+/**
+ * @category models
+ */
 export class BuilderRendering{
 
     constructor( public readonly modulesView: Array<ModuleView> ,
@@ -49,27 +67,41 @@ export class BuilderRendering{
     }
 }
 
+/**
+ * @category models
+ */
 export class RunnerRendering{
 
     constructor( public readonly layout : string = "", public readonly style : string = "" ){}
 }
 
+/**
+ * @category models
+ */
 export class PackageLink{
     constructor( public readonly id: string, public readonly version : string ){}
 }
 
+/**
+ * @category models
+ */
 export class Requirements{
 
     constructor( public readonly fluxComponents: Array<string>,public readonly fluxPacks: Array<string>,
         public readonly libraries: Object,public readonly loadingGraph: any){}
 }
 
+/**
+ * @category models
+ */
 export class Description{
 
     constructor( public readonly name: string,public readonly description: string ){}
 }
 
-
+/**
+ * @category models
+ */
 export class LayerTree {
 
     constructor( 
@@ -97,6 +129,9 @@ export class LayerTree {
   
 }
 
+/**
+ * @category models
+ */
 export class Workflow {
 
     constructor( public readonly modules : Array<ModuleFlux>,  
@@ -106,6 +141,9 @@ export class Workflow {
                  ){}
 } 
 
+/**
+ * @category models
+ */
 export class Project{
 
     constructor( public readonly name: string,

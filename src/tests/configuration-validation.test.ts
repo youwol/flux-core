@@ -1,4 +1,4 @@
-import { ConsistentConfiguration, mergeConfiguration, UnconsistentConfiguration } from "../lib/models/configuration-validation"
+import { ConsistentConfiguration, mergeConfiguration, InconsistentConfiguration } from "../lib/models/configuration-validation"
 import { Property, Schema } from "../lib/models/decorators"
 import { testPack } from "../lib/modules/test-modules"
 
@@ -89,13 +89,13 @@ test('consistent replacment', () => {
     expect(status.intrus).toEqual([])
 })
 
-test('unconsistent replacment', () => {
+test('Inconsistent replacment', () => {
 
     let persistentData = new Derived()
     let status = mergeConfiguration(persistentData,{numberProp: "2", enumProp: "f", data:{x:5.2} })
-    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+    expect(status).toBeInstanceOf(InconsistentConfiguration)
 
-    if( status instanceof UnconsistentConfiguration){
+    if( status instanceof InconsistentConfiguration){
             
         expect(status.intrus).toEqual([])
         expect(status.missings).toEqual([])
@@ -121,14 +121,14 @@ test('unconsistent replacment', () => {
     }
 })
 
-test('unconsistent replacment with objects', () => {
+test('Inconsistent replacment with objects', () => {
 
     let persistentData = new Derived()
     let v = new ArrayBuffer(256) 
     let status = mergeConfiguration(persistentData,{numberProp: v  })
-    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+    expect(status).toBeInstanceOf(InconsistentConfiguration)
 
-    if( status instanceof UnconsistentConfiguration){
+    if( status instanceof InconsistentConfiguration){
             
         expect(status.intrus).toEqual([])
         expect(status.missings).toEqual([])
@@ -141,7 +141,7 @@ test('unconsistent replacment with objects', () => {
         }) 
     }
     status = mergeConfiguration(persistentData,{numberProp: {} })
-    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+    expect(status).toBeInstanceOf(InconsistentConfiguration)
 })
 
 test('unexpected value', () => {
@@ -158,9 +158,9 @@ test('missing value', () => {
     let persistentData = new Derived()
     let status = mergeConfiguration(persistentData,{data: 0})
 
-    expect(status).toBeInstanceOf(UnconsistentConfiguration)
+    expect(status).toBeInstanceOf(InconsistentConfiguration)
 
-    if( status instanceof UnconsistentConfiguration){
+    if( status instanceof InconsistentConfiguration){
         expect(status.intrus).toEqual([])
         expect(status.missings).toEqual(['/data/x','/data/y'])
         expect(status.typeErrors).toEqual([

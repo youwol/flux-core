@@ -108,10 +108,10 @@ export function genericModulePlotData({ module , icon, width, vMargin, vStep, in
 export function genericModulePlot( 
     
     { module , icon, width, vMargin, vStep} : 
-    { module : ModuleFlux, icon:any, width: number, vMargin:number, vStep:number }){
+    { module : ModuleFlux, icon:any, width: number, vMargin:number, vStep:number }) : SVGElement {
         
     let data = genericModulePlotData({ module , icon, width, vMargin, vStep,
         inputs:module.inputSlots, outputs:module.outputSlots , actions:{}  })
     
-    return createHTMLElement({ data, subscriptions: [], namespace: "svg" })
+    return createHTMLElement({ data, subscriptions: [], namespace: "svg" }) as unknown as SVGElement
 }

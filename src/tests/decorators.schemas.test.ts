@@ -1,4 +1,4 @@
-import { Schema, Property, Method } from "../index"
+import { Schema, Property } from "../index"
 
 console.log = () =>{}
 let pack : any = {}
@@ -51,48 +51,6 @@ test('PropertiesClass_1', () => {
     expect(pack.schemas.PropertiesClass_1.attributes.strProp.type).toEqual("Object")    
 })
 
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-@Schema({
-    pack: pack,
-    description: "A 3D object defined by its geometry and material"
-})
-export class MethodsClass {
-
-    @Method({ description: "a method" })
-    do( arg1: number, arg2 :PropertiesClass_1 ) : PropertiesClass { return undefined }
-}
-
-test('MethodsClass', () => {
-
-    expect(pack.schemas.MethodsClass).toBeDefined()        
-    expect(pack.schemas.MethodsClass.methods.do).toBeDefined()   
-    expect(pack.schemas.MethodsClass.methods.do.name).toEqual("do")   
-    expect(pack.schemas.MethodsClass.methods.do.return).toEqual("PropertiesClass")    
-    expect(pack.schemas.MethodsClass.methods.do.arguments).toEqual(['Number','PropertiesClass_1'])       
-    expect(pack.schemas.MethodsClass.methods.do.metadata.description).toEqual("a method")           
-})
-
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-@Schema({
-    pack: pack,
-    description: "A 3D object defined by its geometry and material"
-})
-export class MethodsClass_1 {
-
-    @Method({ description: "a method" })
-    do( arg1, arg2 :PropertiesClass_1 )  { return undefined }
-}
-
-test('MethodsClass', () => {
-
-    expect(pack.schemas.MethodsClass_1).toBeDefined()          
-    expect(pack.schemas.MethodsClass_1.methods.do.return).toEqual("Any")    
-    expect(pack.schemas.MethodsClass_1.methods.do.arguments).toEqual(['Object','PropertiesClass_1']) 
-})
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
