@@ -1,4 +1,4 @@
-import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, LoadingGraph } from "@youwol/cdn-client"
+import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getLoadingGraph, LoadingGraph } from "@youwol/cdn-client"
 import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
@@ -96,11 +96,9 @@ export class Environment implements IEnvironment{
         return createObservableFromFetch(request)
     }
 
-    getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema> {
+    getLoadingGraph(body:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema> {
     
-        let url = `/api/cdn-backend/queries/loading-graph`
-        let request = new Request(url, { method:'POST', body: JSON.stringify({libraries})})
-        return createObservableFromFetch(request)
+        return from(getLoadingGraph(body))
     }
 }
 
