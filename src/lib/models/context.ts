@@ -502,6 +502,14 @@ export class Context{
         this.endTimestamp = performance.now()
     }
 
+    /**
+     * Call [[end]] on this context, and call [[terminate]] on the parent
+     */
+    terminate(){
+        this.end() 
+        this.parent && this.parent.terminate()
+    }
+
     /** 
      * @param from a reference timestamp, use this.[[startTimestamp]] if not provided
      * @returns Either the 'true' elapsed time of this context if it has ended or the maximum  
