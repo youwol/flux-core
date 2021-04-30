@@ -1333,7 +1333,7 @@ export abstract class ModuleFlux {
         context.withChild(
             "module's processing",
             (ctx) => {
-                return f( input, {cache: this.cache} )
+                return f( {...input, ...{context: ctx} }, {cache: this.cache} )
             }
         )
     }
