@@ -599,7 +599,7 @@ export class Context{
  *          id,
  *          class: "w-100 h-100",
  *          connectedCallback: (div) =>       
- *              elem.ownSubscription( 
+ *              elem.ownSubscriptions( 
  *                  data$.subscribe( data => Plotly.newPlot(div, data) );
  *              )
  *          }
