@@ -1,6 +1,6 @@
 
 export class Scene<Model>{
-
+    
     constructor(
         public readonly idGetter: (Model) => string,         
         public readonly addFunction: (Model) => void,
@@ -51,4 +51,27 @@ export class Scene<Model>{
         let inScene = this.inScene.filter( m => !modelsRemoved.includes(m) ).concat(modelsAdded)
         return new Scene(this.idGetter, this.addFunction,this.removeFunction, this.isReadyFunction ,inScene, inCache  )
     }
+}
+
+/**
+ * Creation companion function of the class [[Scene]]
+ * @param id id getter, when adding an object into the scene, if one with same **id** 
+ * already exists, the existing one is first removed before the incoming one is added
+ * @param add when an object actually needs to be added in the scene,
+ * this callback is used to let the class's consumer add this object into the rendering logic.
+ * @param remove  when an object actually needs to be removed from the scene,
+ * this callback is used to let the class's consumer remove this object from the rendering logic.
+ * @param ready callback that returns true when the 'renderer' is ready; until then objects added to the scene are cached
+ * @returns 
+ */
+export function createEmptyScene<TModel>({
+    id, add, remove, ready
+}:{
+    id:(TModel)=> string,
+    add:(TModel)=> void,
+    remove:(TModel)=> void,
+    ready: ()=> boolean,
+}) : Scene<TModel> {
+
+    return new Scene<TModel>(id,add,remove,ready)
 }
