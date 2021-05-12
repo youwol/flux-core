@@ -1,4 +1,32 @@
 
+/**
+ * 
+ * ## Scene
+ * 
+ * A scene is an helper for stateful modules: modules that accumulates 
+ * objects to display them in some ways. It can be for instance 2D or 3D viewers.
+ * 
+ * Providing a list of objects to add into the scene, two cases can be encountered:
+ * -    no object with same id already exists in the scene: the object is added
+ * -    an object with same id exists in the scene: the previous object is removed and the new one added.
+ * 
+ * The class is mostly relying on 3 callbacks taking an object as argument:
+ * -    an **idGetter**: returns the idea of an object
+ * -    an **addFunction**: when an object actually needs to be added in the scene,
+ * this callback is used to let the class's consumer add this object into the rendering logic.
+ * -    an **removeFunction**: when an object actually needs to be removed from the scene,
+ * this callback is used to let the class's consumer remove this object from the rendering logic.
+ * 
+ * Another callback, **isReadyFunction**, allows to define when the rendering logic is correctly 
+ * initialized. Until this function returns **true**, the objects added in the scene are 
+ * saved in a cache and no call to **addFunction** or **removeFunction** are triggered. 
+ * When this function returns **true**, the added objects, and eventually those in cache, 
+ * are added in the scene (and calls to  **addFunction** or **removeFunction** triggered).
+ * 
+ * The class is immutable: when doing [[add]] or [[clear]] a new version of the scene is returned.
+ * 
+ * To initialize an empty scene, the function [[createEmptyScene]] should be used.
+ */
 export class Scene<Model>{
     
     constructor(
