@@ -45,3 +45,5 @@ export namespace ModuleDataEmittor{
         }
     }
 }
+
+export let ModuleDataEmitter = ModuleDataEmittor
