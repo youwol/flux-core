@@ -67,6 +67,11 @@ function instantiatePlugin(
     let mdleArguments = Object.assign({},{moduleId, configuration, Factory:factory, parentModule},commonMdleArgs)
 
     let plugin = new factory.Module(mdleArguments)
+    if(factory.compatibility)
+        Object.entries(factory.compatibility).forEach(([description,testFct]:[string, any]) => {
+            if(!testFct(parentModule))
+                throw Error(`Plugin ${plugin.moduleId} not compatible with parent ${parentModule.moduleId}`)
+        })
     return plugin
 }
 
