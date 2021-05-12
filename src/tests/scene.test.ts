@@ -1,17 +1,16 @@
 import { Scene} from '../index'
+import { createEmptyScene } from '../lib/models'
 
 test('scene', () => {
     
     let ready = false
     let models = []
-    let scene = new Scene(
-        (model) => model.id,     
-        (model) => models.push(model),  
-        (model) => {models = models.filter( m=>m!=model.id)}, 
-        () => ready,
-        [],
-        []
-    )
+    let scene = createEmptyScene({
+        id: (model) => model.id,     
+        add: (model) => models.push(model),  
+        remove:(model) => {models = models.filter( m=>m!=model.id)}, 
+        ready: () => ready,
+    })
     expect(scene).toBeDefined()
 
     scene = scene.add({id:"titi"})
