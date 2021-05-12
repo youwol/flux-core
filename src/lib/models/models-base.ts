@@ -1228,11 +1228,11 @@ export abstract class ModuleFlux {
      * @param title title of the journal
      * @param entryPoint the [[Context | context]] entry point of the journal
      */
-    addJournal( { title, entryPoint } : {title: string, entryPoint: Context}) {
+    addJournal( { title, entryPoint, abstract } : {title: string, abstract?: string, entryPoint: Context}) {
 
         this.journals = this.journals
         .filter( j => j.title != title)
-        .concat([new Journal({title, entryPoint})])
+        .concat([new Journal({title, abstract, entryPoint})])
     }
 
     private newInputSlot({id, description, contract, onTriggered }:

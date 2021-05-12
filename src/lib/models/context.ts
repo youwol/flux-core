@@ -668,6 +668,11 @@ export class Journal{
     title: string
 
     /**
+     * abstract of the journal
+     */
+    abstract: string | undefined
+
+    /**
      * Registered widgets that are used to render the *data* property of
      * a [[Log]] if possible (if the function [[JournalWidget.isCompatible]] apply 
      * to this *data* return true).
@@ -725,12 +730,15 @@ export class Journal{
      */
     constructor({
         title,
-        entryPoint
+        entryPoint,
+        abstract
     }:{
         title: string,
-        entryPoint: Context
+        entryPoint: Context,
+        abstract?: string
     }){
         this.entryPoint = entryPoint
         this.title = title
+        this.abstract = abstract
     }
 }
