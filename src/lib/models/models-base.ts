@@ -1334,7 +1334,14 @@ export abstract class ModuleFlux {
         context.withChild(
             "module's processing",
             (ctx) => {
-                return f( {...input, ...{context: ctx} }, {cache: this.cache} )
+                try{
+                    return f( {...input, ...{context: ctx} }, {cache: this.cache} )
+                }
+                catch(error){
+                    let mdleError =  new ModuleError(this, error.message)
+                    mdleError.stack = error.stack
+                    throw mdleError
+                }
             }
         )
     }
