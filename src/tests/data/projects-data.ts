@@ -4,6 +4,7 @@ export let mockProjectsDB={
     emptyProject :{
         requirements:{
             fluxPacks:[],
+            libraries:{},
             loadingGraph:{ 
                 definition:[], 
                 lock:[],
@@ -38,6 +39,7 @@ export let mockProjectsDB={
     simpleProject :{
         requirements:{
             fluxPacks:["flux-test"],
+            libraries:{"flux-test":"0.0.0"},
             loadingGraph:{ 
                 definition:[
                     [["assetId_flux-test", "cdn/libraries/flux-test/0.0.0/bundle.js"]]
