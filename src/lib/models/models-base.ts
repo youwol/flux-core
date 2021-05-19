@@ -1209,7 +1209,7 @@ export abstract class ModuleFlux {
         let obs$ = new ReplaySubject<{ data: T, configuration?:Object, context?: Context }>(1)
         let piped = obs$.pipe(
             map(({ data, context, configuration }:{data: T, context?: Context, configuration?:Object}) => {
-                context && context.info('emit output', data)
+                context && context.info && context.info('emit output', data)
                 this.log("send output", { data, context, this: this })
                 return { 
                     data, 
