@@ -1276,6 +1276,7 @@ export abstract class ModuleFlux {
                 (ctx: Context) => {
                     return connection.adaptor.mappingFunction(message, this.helpers)
                 })
+            context.userContext = adaptedInput.context || {}
         }
         
         let conf = this.configuration.data
