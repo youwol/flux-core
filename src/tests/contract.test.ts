@@ -1,3 +1,4 @@
+import { Context } from "../lib/models"
 import { expect as expect_, expectCount, expectSome, BaseExpectation, 
     expectAnyOf, expectAllOf, expectAttribute, contract, expectSingle, expectInstanceOf} from "../lib/models/contract"
 
@@ -21,6 +22,7 @@ class ExpectCollec{
 
 test('straightLeafNumber', () => {
 
+    let context = new Context("Test context", {})
     let straightLeafNumber = expect_<number>({
         description: `straightLeafNumber`,
         when: (inputData) => typeof (inputData) == 'number',
@@ -32,7 +34,7 @@ test('straightLeafNumber', () => {
         {data:"5", succeeded: false, value:undefined} 
     ]
     scenarios.map( (scenario) => {
-        let {succeeded, value} = straightLeafNumber.resolve(scenario.data)
+        let {succeeded, value} = straightLeafNumber.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -43,6 +45,7 @@ test('straightLeafNumber', () => {
 
 test('permissiveLeafNumber; no allOf', () => {
 
+    let context = new Context("Test context", {})
     let permissiveLeafNumber = expectAnyOf<number>({
         description: `permissiveLeafNumber`,
         when: [
@@ -62,7 +65,7 @@ test('permissiveLeafNumber; no allOf', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = permissiveLeafNumber.resolve(scenario.data)
+        let {succeeded, value} = permissiveLeafNumber.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -71,6 +74,8 @@ test('permissiveLeafNumber; no allOf', () => {
 })
 
 test('permissiveLeafNumber; with allOf', () => {
+
+    let context = new Context("Test context", {})
 
     let permissiveLeafNumber = expectAnyOf<number>({
         description: `permissiveLeafNumber`,
@@ -103,7 +108,7 @@ test('permissiveLeafNumber; with allOf', () => {
 
     scenarios.map( (scenario) => {
         
-        let {succeeded, value} = permissiveLeafNumber.resolve(scenario.data)
+        let {succeeded, value} = permissiveLeafNumber.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -111,7 +116,10 @@ test('permissiveLeafNumber; with allOf', () => {
     ExpectCollec.permissiveLeafNumber = permissiveLeafNumber 
 })
 
+
 test('permissiveNumber', () => {
+
+    let context = new Context("Test context", {})
 
     let permissiveNumber = expectAnyOf<number>({
         description: `permissiveNumber`,
@@ -133,7 +141,7 @@ test('permissiveNumber', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = permissiveNumber.resolve(scenario.data)
+        let {succeeded, value} = permissiveNumber.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -143,6 +151,8 @@ test('permissiveNumber', () => {
 
 
 test('two Numbers; raw', () => {
+
+    let context = new Context("Test context", {})
 
     let twoNumbers = expectAllOf<number[]>({
         description: `two numbers`,
@@ -154,11 +164,11 @@ test('two Numbers; raw', () => {
             expect_({
                 description:'2 numbers',
                 when: (elems: Array<any>) => {
-                    return elems.filter( d => ExpectCollec.permissiveNumber.resolve(d).succeeded ).length == 2
+                    return elems.filter( d => ExpectCollec.permissiveNumber.resolve(d, context).succeeded ).length == 2
                 },
                 normalizeTo: (elems: Array<any>) => {
                     return elems
-                    .map( d => ExpectCollec.permissiveNumber.resolve(d))
+                    .map( d => ExpectCollec.permissiveNumber.resolve(d, context))
                     .filter( d => d.succeeded)
                     .map( d => d.value)
                 },
@@ -176,7 +186,7 @@ test('two Numbers; raw', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = twoNumbers.resolve(scenario.data)
+        let {succeeded, value} = twoNumbers.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -185,6 +195,8 @@ test('two Numbers; raw', () => {
 
 
 test('2 numbers', () => {
+
+    let context = new Context("Test context", {})
 
     let twoNumbers = expectCount<number>( {count:2, when:ExpectCollec.permissiveNumber}) as BaseExpectation<number[]>
 
@@ -199,7 +211,7 @@ test('2 numbers', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = twoNumbers.resolve(scenario.data)
+        let {succeeded, value} = twoNumbers.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -207,6 +219,8 @@ test('2 numbers', () => {
 
 
 test('instance of', () => {
+
+    let context = new Context("Test context", {})
 
     let material = expectInstanceOf<Material>( {typeName: 'Material', Type:Material, attNames:['mat', 'material']})
     let matInstance = new Material()
@@ -218,7 +232,7 @@ test('instance of', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = material.resolve(scenario.data)
+        let {succeeded, value} = material.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -228,7 +242,10 @@ test('instance of', () => {
 
 test('some numbers', () => {
 
-    let someNumbers = expectSome<number>({when:ExpectCollec.permissiveNumber}) as BaseExpectation<number[]>
+    let context = new Context("Test context", {})
+
+    let someNumbers = expectSome<number>({
+        description:"numbers", when:ExpectCollec.permissiveNumber}) as BaseExpectation<number[]>
 
     let scenarios = [ 
         {data:5, succeeded:true, value:[5]},
@@ -239,7 +256,7 @@ test('some numbers', () => {
     ]
 
     scenarios.map( (scenario) => {
-        let {succeeded, value} = someNumbers.resolve(scenario.data)
+        let {succeeded, value} = someNumbers.resolve(scenario.data, context)
         expect(succeeded).toEqual( scenario.succeeded)
         expect(value).toEqual( scenario.value)
     })
@@ -248,15 +265,17 @@ test('some numbers', () => {
 
 test('contract', () => {
 
+    let context = new Context("Test context", {})
+
     let inputContract = contract({
         description: "resolve one material & some meshes with some options",
         requireds: {   
             mat:expectSingle<Material>({when:ExpectCollec.material}), 
-            mesh:expectSome<Mesh>({when:ExpectCollec.mesh}), 
+            mesh:expectSome<Mesh>({description:"Mesh", when:ExpectCollec.mesh}), 
         },
         optionals: {
-            option1 : expectSome<Option1>({when:ExpectCollec.option1}), 
-            option2: expectSome<Option2>({when:ExpectCollec.option2}), 
+            option1 : expectSome<Option1>({description:"Option1",when:ExpectCollec.option1}), 
+            option2: expectSome<Option2>({description:"Option2", when:ExpectCollec.option2}), 
         }
     })
     let [mesh, mat, option1, option2] = [new Mesh(), new Material(), new Option1(), new Option2()]
@@ -270,7 +289,7 @@ test('contract', () => {
         {data:[mat,mesh, "aa", option2, option1], succeeded:true, value:{mesh:[mesh], mat:mat, option1:[option1], option2:[option2]}},
     ]
     scenarios.forEach( ({data, succeeded, value}) => {
-        let resolved = inputContract.resolve(data)
+        let resolved = inputContract.resolve(data, context)
         expect(resolved.succeeded).toEqual(succeeded)
         expect(resolved.value).toEqual(value)
     })       
