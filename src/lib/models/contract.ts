@@ -176,6 +176,8 @@
  * @module contract
  */
 
+import { Context } from "./context"
+
 
 
 /**
@@ -311,7 +313,7 @@ export interface IExpectation<T> {
      * -    the expectation is failed: [[RejectedExpectation]]
      * -    the expectation does not need to be resolved: [[UnresolvedExpectation]]
      */
-    resolve(inputData: unknown) :  ExpectationStatus<T>
+    resolve(inputData: unknown, context: Context) :  ExpectationStatus<T>
 }
 
 /**
@@ -333,7 +335,7 @@ export class BaseExpectation<T> implements IExpectation<T> {
     constructor(
         public readonly description: string, 
         public readonly when:  BaseExpectation<T> | ((inputData) => boolean),
-        public readonly normalizeTo: (accData: any) => T = (d) => d ){
+        public readonly normalizeTo: (accData: any, context: Context) => T = (d) => d ){
         }
 
     /**
@@ -346,12 +348,12 @@ export class BaseExpectation<T> implements IExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
         let {succeeded, value } = this.when instanceof BaseExpectation
-            ? this.when.resolve(inputData)
+            ? this.when.resolve(inputData, context)
             : {succeeded:this.when(inputData), value: inputData}
         return succeeded 
-            ? new FulfilledExpectation(this, this.normalizeTo(value), inputData)
+            ? new FulfilledExpectation<T>(this, this.normalizeTo(value, context), inputData)
             : new RejectedExpectation(this, inputData)
     }
 }
@@ -379,7 +381,7 @@ export class Of<T> extends BaseExpectation<T> {
     constructor(
         public readonly description: string, 
         public readonly when:  (inputData: unknown) => boolean,
-        public readonly normalizeTo: (leafData: any) => T = leafData => leafData ){
+        public readonly normalizeTo: (leafData: any, context: Context) => T = leafData => leafData ){
             super(description, when, normalizeTo)
         }
 
@@ -393,10 +395,10 @@ export class Of<T> extends BaseExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
         let succeeded = this.when(inputData)
         return succeeded 
-            ? new FulfilledExpectation(this, this.normalizeTo(inputData), inputData)
+            ? new FulfilledExpectation(this, this.normalizeTo(inputData, context), inputData)
             : new RejectedExpectation(this, inputData)
     }
 }
@@ -429,7 +431,7 @@ export class AnyOf<T> extends BaseExpectation<T> {
     constructor( 
         description: string,
         public readonly expectations:  Array<IExpectation<T>>,
-        normalizeTo: (accData: any) => T = (accData) => accData ){
+        normalizeTo: (accData: any, context: Context) => T = (accData) => accData ){
             super(description,undefined, normalizeTo)
         }
 
@@ -447,13 +449,13 @@ export class AnyOf<T> extends BaseExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
 
         let done = false
         let children = this.expectations.map( (expectation) => {
             if(done)
                 return new UnresolvedExpectation(expectation, inputData)
-            let resolved = expectation.resolve(inputData)
+            let resolved = expectation.resolve(inputData, context)
             done = resolved.succeeded
             return resolved
         })
@@ -464,7 +466,7 @@ export class AnyOf<T> extends BaseExpectation<T> {
         )
 
         return resolved.succeeded 
-            ? new FulfilledExpectation(this, this.normalizeTo(resolved.value), inputData, children)
+            ? new FulfilledExpectation(this, this.normalizeTo(resolved.value, context), inputData, children)
             : new RejectedExpectation(this, inputData, children)
     }
 }
@@ -483,8 +485,8 @@ export class AnyOf<T> extends BaseExpectation<T> {
  */
 export function expectAnyOf<T>({ description, when, normalizeTo}:
     {   description: string, 
-        when:  Array<IExpectation<T>>, 
-        normalizeTo?: (data: any) => T
+        when:  Array<IExpectation<any>>, 
+        normalizeTo?: (data: any, context: Context) => T
     }): AnyOf<T>{
 
     return new AnyOf<T>(description, when, normalizeTo)
@@ -511,7 +513,7 @@ export class AllOf<T> extends BaseExpectation<T> {
     constructor( 
         description, 
         public readonly expectations:  Array<IExpectation<T>>,
-        normalizeTo: (accData: any) => T = (accData) => accData ){
+        normalizeTo: (accData: any, context: Context) => T = (accData) => accData ){
             super(description, undefined, normalizeTo)
         }
 
@@ -528,13 +530,13 @@ export class AllOf<T> extends BaseExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
 
         let done = false
         let children = this.expectations.map( (expectation) => {
             if(done)
                 return new UnresolvedExpectation(expectation, inputData)
-            let resolved = expectation.resolve(inputData)
+            let resolved = expectation.resolve(inputData, context)
             done = !resolved.succeeded
             return resolved
         })
@@ -549,7 +551,7 @@ export class AllOf<T> extends BaseExpectation<T> {
             }, { succeeded:true, elems:[] }
         )
         return resolveds.succeeded 
-            ? new FulfilledExpectation(this, this.normalizeTo(resolveds.elems), inputData, children)
+            ? new FulfilledExpectation(this, this.normalizeTo(resolveds.elems, context), inputData, children)
             : new RejectedExpectation(this, inputData, children)
     }
 }
@@ -612,11 +614,13 @@ export class OptionalsOf<T> extends BaseExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return the [[FulfilledExpectation]]
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
 
-        let children = this.expectations.map( (expectation) => expectation.resolve(inputData))
+        let children = this.expectations.map( (expectation) => expectation.resolve(inputData, context))
         let resolveds = children.reduce( ( acc, status ) => acc.concat([status.value]), [] )
-        return new FulfilledExpectation(this, this.normalizeTo(resolveds), inputData, children)
+        return new FulfilledExpectation(this, this.normalizeTo(resolveds, context), inputData, children)
+    }
+}
     }
 }
 
@@ -661,14 +665,14 @@ export class ExpectAttribute<T> extends BaseExpectation<T> {
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData
      */
-    resolve(inputData: unknown) : ExpectationStatus<T> {
+    resolve(inputData: unknown, context: Context) : ExpectationStatus<T> {
 
         if(inputData[this.attName] == undefined)
             return new RejectedExpectation(this, inputData)
 
-        let resolved = this.expectation.resolve(inputData[this.attName])
+        let resolved = this.expectation.resolve(inputData[this.attName], context)
         return resolved.succeeded 
-            ? new FulfilledExpectation(this, this.normalizeTo(resolved.value), inputData, [resolved])
+            ? new FulfilledExpectation(this, this.normalizeTo(resolved.value, context), inputData, [resolved])
             : new RejectedExpectation(this, inputData, [resolved])
     }
 }
@@ -933,7 +937,7 @@ export function expect<T>(
     {   
         description: string, 
         when: ((inputData: any) => boolean) | IExpectation<any>, 
-        normalizeTo?: (data: any) => T
+        normalizeTo?: (data: any, ctx: Context) => T
     }): BaseExpectation<T>{
 
     if(when instanceof BaseExpectation)
@@ -1016,10 +1020,10 @@ export class Contract implements IExpectation<unknown>{
      * @param inputData Input data to evaluate the expectation on
      * @return Expectation status from given inputData, either [[FulfilledExpectation]] or [[RejectedExpectation]]
      */
-    resolve( data: unknown ) :  ExpectationStatus<{ [key:string]:unknown}>  {
+    resolve( data: unknown, context: Context ) :  ExpectationStatus<{ [key:string]:unknown}>  {
 
-        let requiredStatus = (new AllOf<any>('requireds', Object.values(this.requireds))).resolve(data)
-        let optionalStatus = (new OptionalsOf<any>('optionals', Object.values(this.optionals))).resolve(data)
+        let requiredStatus = (new AllOf<any>('requireds', Object.values(this.requireds))).resolve(data, context)
+        let optionalStatus = (new OptionalsOf<any>('optionals', Object.values(this.optionals))).resolve(data, context)
 
         let valuesRequired = requiredStatus.succeeded
             ? Object.entries(this.requireds).reduce( (acc,[k,v],i) => {
