@@ -419,7 +419,9 @@ export class Context{
      */
     startChild(title: string, withUserContext: {[key:string]: unknown} = {}): Context{
 
-        return new Context(title, {...this.userContext, ...withUserContext}, this.channels$, this )
+        let childCtx = new Context(title, {...this.userContext, ...withUserContext}, this.channels$, this )
+        this.children.push(childCtx)
+        return childCtx
     }
 
     /**
