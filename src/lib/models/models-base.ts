@@ -1314,7 +1314,17 @@ export abstract class ModuleFlux {
         let resolution = context.withChild( 
             'resolve contract' , 
             (ctx) => {
-                let resolution = contract.resolve(adaptedInput.data)
+                let resolution = undefined
+                try{
+                    resolution = contract.resolve(adaptedInput.data, ctx)
+                }
+                catch(error){
+                    let mdleError =  new ModuleError(
+                        this,
+                        `Error while resolving input contract: ${error.message}`)
+                    mdleError.stack = error.stack
+                    throw mdleError
+                }
                 if(resolution.succeeded)
                     ctx.info('resolved expectations', resolution)
                 if(!resolution.succeeded)
