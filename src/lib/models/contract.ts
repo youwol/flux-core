@@ -621,6 +621,30 @@ export class OptionalsOf<T> extends BaseExpectation<T> {
         return new FulfilledExpectation(this, this.normalizeTo(resolveds, context), inputData, children)
     }
 }
+
+
+
+/**
+ * ## expectOptionalsOf
+ * 
+ * Companion creation function of [[OptionalsOf]].
+ * 
+ * @param description description of the expectation
+ * @param when array of children expectations
+ * @param normalizeTo normalizing function
+ * @param T The type of [[FulfilledExpectation.value]], i.e. the type of the expectation return's value (normalized value) 
+ * when the expectation is fulfilled
+ * @returns AllOf expectation
+ */
+ export function expectOptionalsOf<T>( {description, when, normalizeTo}: 
+    {   
+        description: string, 
+        when:  Array<IExpectation<T>>, 
+        normalizeTo?: (accData: Array<any> ) => T
+    }): OptionalsOf<T>{
+
+    return new OptionalsOf<T>(description, when, normalizeTo)
+}
     }
 }
 
