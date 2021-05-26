@@ -206,7 +206,7 @@ export class ExpectationStatus<T>{
      */
     constructor( 
         public readonly expectation:IExpectation<T>,
-        public readonly children: Array<ExpectationStatus<T>> | undefined,
+        public readonly children: Array<ExpectationStatus<unknown>> | undefined,
         public readonly succeeded: boolean,
         public readonly fromValue: unknown,
         public readonly value: T){}
@@ -233,7 +233,7 @@ export class FulfilledExpectation<T> extends ExpectationStatus<T>{
         expectation: IExpectation<T>,
         value: T ,
         fromValue: unknown,
-        children?: Array<ExpectationStatus<T>> | undefined){
+        children?: Array<ExpectationStatus<unknown>> | undefined){
             super(expectation, children, true, fromValue, value)
         }
 }
@@ -256,7 +256,7 @@ export class RejectedExpectation<T> extends ExpectationStatus<T>{
     constructor( 
         expectation: IExpectation<T>,
         fromValue: unknown,
-        children?: Array<ExpectationStatus<T>> | undefined){
+        children?: Array<ExpectationStatus<unknown>> | undefined){
             super(expectation, children, false,fromValue, undefined)
         }
 }
