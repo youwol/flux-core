@@ -839,11 +839,12 @@ export let freeContract = expectFree
  * @param attNames candidate attribute names 
  * @returns BaseExpectation that resolve eventually to a type T
  */
-export function expectInstanceOf<T>({ typeName, Type, attNames}:
+export function expectInstanceOf<T, TConverted = T>({ typeName, Type, attNames, normalizeTo}:
     {   typeName: string, 
         Type, 
-        attNames?: Array<string> 
-    }): BaseExpectation<T>{
+        attNames?: Array<string>,
+        normalizeTo? : (data: T, context: Context) => TConverted
+    }): BaseExpectation<TConverted>{
     
     attNames = attNames || []
     let when = expect<T>({
@@ -853,9 +854,10 @@ export function expectInstanceOf<T>({ typeName, Type, attNames}:
 
     let attExpectations = attNames.map( (name) => expectAttribute({name, when}))
     
-    return expectAnyOf<T>({
+    return expectAnyOf<TConverted>({
         description: `a direct instance of ${typeName}, or such instance in attributes ${attNames}`,
-        when:[  when, ...attExpectations ]
+        when:[  when, ...attExpectations ],
+        normalizeTo
      })
 }
 
