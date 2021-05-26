@@ -645,6 +645,66 @@ export class OptionalsOf<T> extends BaseExpectation<T> {
 
     return new OptionalsOf<T>(description, when, normalizeTo)
 }
+
+
+/**
+ * ## SomeOf
+ * 
+ * Expectation used to describe optionals values - always fulfilled. 
+ * 
+ * @param T The type of [[FulfilledExpectation.value]], i.e. the type of the expectation return's value (normalized value) 
+ * when the expectation is fulfilled
+ */
+ export class SomeOf<T, TConverted = T[]> extends BaseExpectation<TConverted> {
+
+    /**
+     * @param description description of the expectation
+     * @param expectations list of children expectations
+     * @param normalizeTo defines how to normalize the data from the list of children's normalized data
+     */
+    constructor( 
+        description, 
+        public readonly expectation:  IExpectation<T>,
+        public readonly count?: number, 
+        normalizeTo?: (accData: T[]) => TConverted  ){
+            super(description, undefined, normalizeTo)
+        }
+
+     /**
+     * Resolve the expectation
+     * 
+     * SomeOf are always [[FulfilledExpectation]], even if some of its children are [[RejectedExpectation]].
+     * 
+     * The evaluation always go through all the children (no [[UnresolvedExpectation]]) using 
+     * provided *expectation* at construction.
+     * 
+     * The normalized data is the result of the provided *normalizeTo* function 
+     * evaluated using the item of inputData that are resolved successfully using *expectation* .
+     * 
+     * @param inputData Input data to evaluate the expectation on
+     * @return the [[FulfilledExpectation]]
+     */
+    resolve(inputData: unknown | Array<unknown>, context: Context) : ExpectationStatus<TConverted> {
+
+        let arrayData = (Array.isArray(inputData))
+            ? inputData
+            : [inputData]
+
+        let children = arrayData
+        .map( (data) => this.expectation.resolve(data, context))
+        .filter( (expectation) => expectation.succeeded)
+
+        let dataResolved = children.filter((expectation) => expectation.succeeded).map( child => child.value)
+        let normalized = this.normalizeTo 
+            ? this.normalizeTo(dataResolved, context)
+            : dataResolved as unknown as TConverted
+
+        if( dataResolved.length==0 || ( this.count && dataResolved.length != this.count ) )
+            return new RejectedExpectation<TConverted>(this,inputData, children)
+
+        if( this.count == undefined || dataResolved.length == this.count)
+            return new FulfilledExpectation<TConverted>(this, normalized, inputData, children)
+        
     }
 }
 
@@ -816,34 +876,19 @@ export function expectInstanceOf<T>({ typeName, Type, attNames}:
  * @param when the expectation 
  * @returns BaseExpectation that resolve eventually to a type T[] of length *count*
  */
-export function expectCount<T>({count, when}:
+export function expectCount<T, TConverted = T[]>({count, when, normalizeTo}:
     {
         count: number, 
-        when: IExpectation<T>
-    }): BaseExpectation<T[]>{
+        when: IExpectation<T>,
+        normalizeTo?: (d: Array<T>) => TConverted,
+    }): BaseExpectation<TConverted>{
 
-    return expectAllOf<T[]>({
+    return expectSome({
         description: `expect ${count} of "${when.description}"`,
-        when: [
-            expect({
-                description:'an array',
-                when: (d) => Array.isArray(d),
-            }),
-            expect({
-                description:'2 numbers',
-                when: (elems: Array<any>) => {
-                    return elems.filter( d => when.resolve(d).succeeded ).length == count
-                },
-                normalizeTo: (elems: Array<any>) => {
-                    return elems
-                    .map( d => when.resolve(d))
-                    .filter( d => d.succeeded)
-                    .map( d => d.value)
-                },
-            })
-        ],
-        normalizeTo: (d) => d[1]
-    }) as BaseExpectation<T[]>
+        when,
+        count,
+        normalizeTo
+    })
 }
 
 
@@ -865,31 +910,7 @@ export function expectCount<T>({count, when}:
  */
 export function expectSingle<T>({when}:{when: IExpectation<T>}){
 
-    return expectAnyOf<T>({
-        description: `expect single of "${when.description}"`,
-        when: [          
-            expect({
-                description:`an element "${when.description}"`,
-                when: (d) => when.resolve(d).succeeded
-            }),
-            expectAllOf<any>({
-                description:`an array with exactly one element "${when.description}"`,
-                when: 
-                [
-                    expect({
-                        description:'an array',
-                        when: (d) => Array.isArray(d),
-                    }),
-                    expect({
-                        description:`the array includes a single element "${when.description}"`,
-                        when: (elems: Array<unknown>) => elems.filter( d => when.resolve(d).succeeded ).length == 1,
-                        normalizeTo: (elems: Array<unknown>) =>  when.resolve( elems.find( d => when.resolve(d).succeeded ) ).value
-                    }),
-                ],
-                normalizeTo: (d) => d[1]
-            })
-        ]
-    }) as BaseExpectation<T>
+    return expectCount<T, T>({count:1, when, normalizeTo: (d: T[]) => d[0]})
 }
 
 
@@ -908,40 +929,19 @@ export function expectSingle<T>({when}:{when: IExpectation<T>}){
  * @param when the expectation 
  * @returns BaseExpectation that resolve eventually to a type T[]
  */
-export function expectSome<T>({when}:{when: IExpectation<T>}){
+export function expectSome<T, TConverted = T[]>({
+    description,
+    when,
+    count,
+    normalizeTo
+    }:{
+        description?: string,
+        when: IExpectation<T>,
+        count?: number,
+        normalizeTo?: (d: T[]) => TConverted
+    }): BaseExpectation<TConverted>{
 
-    return expectAnyOf<T[]>({
-        description:  `some of "${when.description}"`,
-        when: [
-            expect({
-                description:`an element "${when.description}"`,
-                when: (d) => when.resolve(d).succeeded,
-                normalizeTo: (d) => [d]
-            }),
-            expectAllOf<any>({
-                description:`an array with element(s) "${when.description}"`,
-                when: [
-                    expect({
-                        description:'an array',
-                        when: (d) => Array.isArray(d),
-                    }),
-                    expect({
-                        description:`the array includes some element(s) "${when.description}"`,
-                        when: (elems: Array<unknown>) => {
-                            return elems.filter( d => when.resolve(d).succeeded ).length > 0
-                        },
-                        normalizeTo: (elems: Array<unknown>) => {
-                            return elems
-                            .map( d => when.resolve(d))
-                            .filter( d => d.succeeded)
-                            .map( d => d.value)
-                        },
-                    })
-                ],
-                normalizeTo: (d) => d[1]
-            })
-        ]
-    }) as BaseExpectation<T[]>
+    return new SomeOf(`Expect some`, when, count, normalizeTo)
 }
 
 
