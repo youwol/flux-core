@@ -5,6 +5,7 @@ import { packCore } from "../modules/factory-pack-core"
 import { Adaptor, Connection, Factory, FluxPack, ModuleFlux, PluginFlux } from "../models/models-base"
 import { IEnvironment } from "../environment"
 import { BuilderRenderingSchema, ConnectionSchema, LayerTreeSchema, ModuleSchema, PluginSchema, ProjectSchema } from "./client-schemas"
+import { CdnEvent } from "@youwol/cdn-client"
 
 
 
@@ -24,13 +25,14 @@ function getPackage(name:string){
 
 export function loadProjectDependencies$(
     project: ProjectSchema,
-    environment: IEnvironment
+    environment: IEnvironment,
+    onEvent?: (CdnEvent) => void
     ): Observable<{project:ProjectSchema, packages: Array<FluxPack>}> {
 
     return of(project.requirements.loadingGraph)
     .pipe(
         mergeMap((root: any) => {
-            return environment.fetchLoadingGraph(project.requirements.loadingGraph)
+            return environment.fetchLoadingGraph(project.requirements.loadingGraph, onEvent)
         }),
         tap(r => console.log("dependencies loaded", { libraries: r })),
         mergeMap(() => {

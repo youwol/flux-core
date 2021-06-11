@@ -1,4 +1,5 @@
-import { fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getLoadingGraph, LoadingGraph } from "@youwol/cdn-client"
+import { CdnEvent, fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getAssetId, getLoadingGraph, LoadingGraph, parseResourceId } from "@youwol/cdn-client"
+import { url } from "node:inspector";
 import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
@@ -35,9 +36,9 @@ export interface IEnvironment{
     
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
-    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>
+    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url}[]>
 
-    fetchLoadingGraph(loadingGraph: LoadingGraphSchema) : Observable<LoadingGraphSchema>
+    fetchLoadingGraph(loadingGraph: LoadingGraphSchema, onEvent?: (CdnEvent) => void) : Observable<LoadingGraphSchema>
 
     getProject(projectId) : Observable<ProjectSchema>
 
@@ -69,14 +70,14 @@ export class Environment implements IEnvironment{
         return from(fetchStyleSheets(resources, this.renderingWindow))
     }
 
-    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>{
+    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url}[]>{
 
-        return from(fetchJavascriptAddOn( resources, this.executingWindow))
+        return from(fetchJavascriptAddOn( resources, this.executingWindow, onEvent))
     }
 
-    fetchLoadingGraph(loadingGraph: LoadingGraph) : Observable<LoadingGraphSchema> {
+    fetchLoadingGraph(loadingGraph: LoadingGraph , onEvent?: (CdnEvent) => void) : Observable<LoadingGraphSchema> {
 
-        return from(fetchLoadingGraph(loadingGraph, this.executingWindow)).pipe(
+        return from(fetchLoadingGraph(loadingGraph, this.executingWindow, undefined, onEvent)).pipe(
             map( () => loadingGraph)
         )
     }
@@ -142,11 +143,14 @@ export class MockEnvironment implements IEnvironment{
         return of(resources as unknown as Array<HTMLLinkElement>)
     }
 
-    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<string[]>{
+    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<{assetName, assetId, url}[]>{
 
         resources = Array.isArray(resources) ? resources : [resources]
+        let parsed = resources.map( (r) => parseResourceId(r))
         this.jsAddons = [...this.jsAddons, ...resources]
-        return of(resources)
+        return of(parsed.map( ({name, url, assetId}) => {
+            return {assetName:name, assetId, url}
+        }))
     }
 
     fetchLoadingGraph(loadingGraph: LoadingGraphSchema) : Observable<LoadingGraphSchema>{
