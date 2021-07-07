@@ -209,7 +209,7 @@ export class ExpectationStatus<T>{
     constructor( 
         public readonly expectation:IExpectation<T>,
         public readonly children: Array<ExpectationStatus<unknown>> | undefined,
-        public readonly succeeded: boolean,
+        public readonly succeeded:  boolean | undefined,
         public readonly fromValue: unknown,
         public readonly value: T){}
 }
@@ -847,14 +847,16 @@ export function expectInstanceOf<T, TConverted = T>({ typeName, Type, attNames, 
     
     attNames = attNames || []
     let when = expect<T>({
-        description: `direct instance of ${typeName}`,
+        description: `A direct instance of ${typeName}`,
         when: (d) => d instanceof Type
     })
 
     let attExpectations = attNames.map( (name) => expectAttribute({name, when}))
-    
+    let fullDescription = attNames.length == 0 
+        ? `A direct instance of ${typeName}`
+        : `A direct instance of ${typeName}, or such instance in attributes [${attNames}]`
     return expectAnyOf<TConverted>({
-        description: `a direct instance of ${typeName}, or such instance in attributes ${attNames}`,
+        description: fullDescription,
         when:[  when, ...attExpectations ],
         normalizeTo
      })
@@ -885,7 +887,7 @@ export function expectCount<T, TConverted = T[]>({count, when, normalizeTo}:
     }): BaseExpectation<TConverted>{
 
     return expectSome({
-        description: `expect ${count} of "${when.description}"`,
+        description: when.description,
         when,
         count,
         normalizeTo
@@ -941,8 +943,11 @@ export function expectSome<T, TConverted = T[]>({
         count?: number,
         normalizeTo?: (d: T[]) => TConverted
     }): BaseExpectation<TConverted>{
-
-    return new SomeOf(`Expect some`, when, count, normalizeTo)
+    description = description || when.description
+    let fullDescription = count 
+        ? `${count} of "${description}"`
+        : `1 or more of "${description}"`
+    return new SomeOf(fullDescription, when, count, normalizeTo)
 }
 
 
