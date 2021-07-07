@@ -691,8 +691,7 @@ export class OptionalsOf<T> extends BaseExpectation<T> {
             : [inputData]
 
         let children = arrayData
-        .map( (data) => this.expectation.resolve(data, context))
-        .filter( (expectation) => expectation.succeeded)
+        .map( (data, i) => this.expectation.resolve(data, context) )
 
         let dataResolved = children.filter((expectation) => expectation.succeeded).map( child => child.value)
         let normalized = this.normalizeTo 
