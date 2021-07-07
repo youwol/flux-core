@@ -283,7 +283,7 @@ export class UnresolvedExpectation<T> extends ExpectationStatus<T>{
     constructor( 
         expectation: IExpectation<T>,
         fromValue: unknown ){
-            super(expectation, undefined, false, fromValue, undefined)
+            super(expectation, undefined, undefined, fromValue, undefined)
         }
 }
 
