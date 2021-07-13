@@ -5,6 +5,7 @@ import { map } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
 import { ErrorLog } from "./models/context";
 import { FluxPack, HostCommandRequest } from "./models/models-base";
+import { WorkerPool } from "./worker-pool";
 
 
 export function createObservableFromFetch( request, extractFct = (d) =>d ){
@@ -34,6 +35,8 @@ export interface IEnvironment{
     
     hostCommandRequest$ : Subject<HostCommandRequest>
     
+    workerPool : WorkerPool
+
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
     fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url, src}[]>
@@ -57,6 +60,8 @@ export class Environment implements IEnvironment{
     public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
     public readonly console: IConsole
 
+    public readonly workerPool = new WorkerPool()
+    
     constructor( data:
                 {executingWindow: Window, renderingWindow: Window , console?: Console }){
 
@@ -119,6 +124,8 @@ export class MockEnvironment implements IEnvironment{
     public readonly errors$ = new ReplaySubject<ErrorLog>()
     public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
     
+    public readonly workerPool = undefined
+
     constructor(
         data: {
             projectsDB?: {[key:string]: ProjectSchema},
