@@ -138,7 +138,7 @@ export namespace GroupModules {
                 this.addInput({
                     id:`explicitOutput${i}_in`, 
                     description: 'input side of an explicit output',
-                    contract:undefined,
+                    contract:freeContract(),
                     onTriggered: ({data, context}) => {
                         externalOut.next({ data, context })
                     }
