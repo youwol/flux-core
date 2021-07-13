@@ -36,7 +36,7 @@ export interface IEnvironment{
     
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
 
-    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url}[]>
+    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url, src}[]>
 
     fetchLoadingGraph(loadingGraph: LoadingGraphSchema, onEvent?: (CdnEvent) => void) : Observable<LoadingGraphSchema>
 
@@ -70,7 +70,7 @@ export class Environment implements IEnvironment{
         return from(fetchStyleSheets(resources, this.renderingWindow))
     }
 
-    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url}[]>{
+    fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url, src}[]>{
 
         return from(fetchJavascriptAddOn( resources, this.executingWindow, onEvent))
     }
@@ -143,13 +143,13 @@ export class MockEnvironment implements IEnvironment{
         return of(resources as unknown as Array<HTMLLinkElement>)
     }
 
-    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<{assetName, assetId, url}[]>{
+    fetchJavascriptAddOn( resources: string | Array<string> ): Observable<{assetName, assetId, url, src}[]>{
 
         resources = Array.isArray(resources) ? resources : [resources]
         let parsed = resources.map( (r) => parseResourceId(r))
         this.jsAddons = [...this.jsAddons, ...resources]
         return of(parsed.map( ({name, url, assetId}) => {
-            return {assetName:name, assetId, url}
+            return {assetName:name, assetId, url, src:""}
         }))
     }
 
