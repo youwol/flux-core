@@ -1,6 +1,6 @@
 {
     "name": "@youwol/flux-core", 
-    "version": "0.0.15",
+    "version": "0.0.16",
     "license": "MIT",
     "author": "greinisch@youwol.com",
     "description": "Core library to create flux applications",
