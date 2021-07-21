@@ -1,6 +1,7 @@
 
 import { Observable, of, ReplaySubject, Subject } from "rxjs"
 import { filter, map, reduce, switchMap, take, takeUntil, takeWhile, tap } from "rxjs/operators"
+import { IEnvironment } from "./environment"
 import { Context } from "./models/context"
 
 
@@ -170,11 +171,12 @@ export class WorkerPool{
     }
 
 
-    schedule<TArgs=any>({title, entryPoint, args, targetWorkerId, context}: { 
+    schedule<TArgs=any>({title, entryPoint, args, targetWorkerId, environment, context}: { 
         title: string,
         entryPoint: ({ args, taskId, context, workerScope }:{ args:TArgs, taskId: string, context: any, workerScope: any }) => void,
         args: TArgs,
         targetWorkerId?: string,
+        environment?: IEnvironment,
         context: Context
     } ): Observable<any> {
 
@@ -182,6 +184,16 @@ export class WorkerPool{
             
             let taskId = `t${Math.floor(Math.random()*1e6)}`
             let channel$ = new Subject()
+            environment && environment.exposeProcess({
+                title,
+                id: taskId,
+                scheduled$:of({}),
+                started$: channel$.pipe( filter( (message: any) => message.type == "Start")),
+                canceled$: channel$.pipe( filter( (message: any) => message.type == "Cancel")),
+                failed$: channel$.pipe( filter( (message: any) => message['type'] == 'Exit' && message['data'].error)),
+                succeeded$: channel$.pipe( filter( (message: any) => message['type'] == 'Exit' && !message['data'].error)),
+                context: ctx
+            })
             let r$ = this.instrumentChannel$(channel$, taskId, context)            
 
             console.log(`WORKER POOL: ###### Schedule ${title} with ${taskId} ######` )
