@@ -1,9 +1,9 @@
 import { CdnEvent, fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getAssetId, getLoadingGraph, LoadingGraph, parseResourceId } from "@youwol/cdn-client"
 import { url } from "node:inspector";
 import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
-import { map } from "rxjs/operators"
+import { map, take } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
-import { ErrorLog } from "./models/context";
+import { Context, ErrorLog } from "./models/context";
 import { FluxPack, HostCommandRequest } from "./models/models-base";
 import { WorkerPool } from "./worker-pool";
 
@@ -27,6 +27,20 @@ type IConsole = {
     error:(message?: any, ...optionalParams: any[])=> void,
 }
 
+export class Process{
+
+    constructor(
+        public readonly id: string,
+        public readonly title: string,
+        public readonly scheduled$: Observable<any>,
+        public readonly started$: Observable<any>,
+        public readonly canceled$: Observable<any>,
+        public readonly failed$: Observable<any>,
+        public readonly succeeded$: Observable<any>,
+        public readonly context?: Context ){
+        }
+}
+
 export interface IEnvironment{
 
     console: IConsole
@@ -34,7 +48,9 @@ export interface IEnvironment{
     errors$ : Subject<ErrorLog>
     
     hostCommandRequest$ : Subject<HostCommandRequest>
-    
+
+    processes$ : ReplaySubject<Process>
+
     workerPool : WorkerPool
 
     fetchStyleSheets( resources: string | Array<string>) : Observable<Array<HTMLLinkElement>>
@@ -49,6 +65,16 @@ export interface IEnvironment{
 
     getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema>
 
+    exposeProcess({title, id, scheduled$, started$, canceled$, failed$, succeeded$, context}:{
+        title:string, 
+        id:string, 
+        scheduled$: Observable<any>, 
+        started$: Observable<any>, 
+        canceled$: Observable<any>, 
+        failed$: Observable<any>, 
+        succeeded$: Observable<any>,
+        context?: Context})
+
 }
 
 export class Environment implements IEnvironment{
@@ -58,6 +84,8 @@ export class Environment implements IEnvironment{
 
     public readonly errors$ = new ReplaySubject<ErrorLog>()
     public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
+    public readonly processes$ = new ReplaySubject<Process>()
+
     public readonly console: IConsole
 
     public readonly workerPool = new WorkerPool()
@@ -106,6 +134,29 @@ export class Environment implements IEnvironment{
     
         return from(getLoadingGraph(body))
     }
+
+    exposeProcess({title, id, scheduled$, started$, canceled$, failed$, succeeded$, context}:{
+        title:string, 
+        id:string, 
+        scheduled$: Observable<any>, 
+        started$: Observable<any>, 
+        canceled$: Observable<any>, 
+        failed$: Observable<any>, 
+        succeeded$: Observable<any>,
+        context?: Context
+        }){
+            let p = new Process(
+                id, 
+                title, 
+                scheduled$.pipe(take(1)), 
+                started$.pipe(take(1)), 
+                canceled$.pipe(take(1)), 
+                failed$.pipe(take(1)), 
+                succeeded$.pipe(take(1)),
+                context
+                )
+            this.processes$.next(p)
+        }
 }
 
 export type KeyLoadingGraphStore = {libraries:{[key:string]: string}, using:{[key:string]: string}}
@@ -123,6 +174,7 @@ export class MockEnvironment implements IEnvironment{
 
     public readonly errors$ = new ReplaySubject<ErrorLog>()
     public readonly hostCommandRequest$ = new  Subject<HostCommandRequest>()
+    public readonly processes$ = new ReplaySubject<Process>()
     
     public readonly workerPool = undefined
 
@@ -190,4 +242,5 @@ export class MockEnvironment implements IEnvironment{
 
         return of(this.loadingGraphResponses[key])
     }
+    exposeProcess(){}
 }
