@@ -1,4 +1,4 @@
-import { CdnEvent, fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getAssetId, getLoadingGraph, LoadingGraph, parseResourceId } from "@youwol/cdn-client"
+import { CdnEvent, fetchJavascriptAddOn, fetchLoadingGraph, fetchSource, fetchStyleSheets, getAssetId, getLoadingGraph, LoadingGraph, parseResourceId } from "@youwol/cdn-client"
 import { url } from "node:inspector";
 import { forkJoin, from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map, take } from "rxjs/operators"
@@ -92,6 +92,8 @@ export interface IEnvironment{
     fetchJavascriptAddOn( resources: string | Array<string> , onEvent?: (CdnEvent) => void): Observable<{assetName, assetId, url, src}[]>
 
     fetchLoadingGraph(loadingGraph: LoadingGraphSchema, onEvent?: (CdnEvent) => void) : Observable<LoadingGraphSchema>
+    
+    fetchSources(sources: {name: string, assetId: string, url: string}[], onEvent?:  ( event: CdnEvent) => void ) : Observable<{name, assetId, url, content}[]> 
 
     getProject(projectId) : Observable<ProjectSchema>
 
@@ -143,6 +145,12 @@ export class Environment implements IEnvironment{
         return from(fetchLoadingGraph(loadingGraph, this.executingWindow, undefined, onEvent)).pipe(
             map( () => loadingGraph)
         )
+    }
+
+    fetchSources(sources: {name: string, assetId: string, url: string}[], onEvent?:  ( event: CdnEvent) => void ) : Observable<{name, assetId, url, content}[]> {
+
+        let promises = sources.map( ({name, assetId, url}) =>  fetchSource( name, assetId, url, onEvent))
+        return forkJoin(promises)
     }
 
     getProject(projectId) : Observable<ProjectSchema> {
@@ -238,6 +246,10 @@ export class MockEnvironment implements IEnvironment{
             }
         )
         return of(loadingGraph)
+    }
+    
+    fetchSources(sources: {name: string, assetId: string, url: string}[], onEvent?:  ( event: CdnEvent) => void ) : Observable<{name, assetId, url, content}[]>{
+        throw Error(`fetchSource not implemented in MockEnvironment` )
     }
 
     getProject(projectId: string) : Observable<ProjectSchema>{
