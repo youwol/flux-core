@@ -1,6 +1,6 @@
 import { CdnEvent, fetchJavascriptAddOn, fetchLoadingGraph, fetchStyleSheets, getAssetId, getLoadingGraph, LoadingGraph, parseResourceId } from "@youwol/cdn-client"
 import { url } from "node:inspector";
-import { from, Observable, of, ReplaySubject, Subject } from "rxjs"
+import { forkJoin, from, Observable, of, ReplaySubject, Subject } from "rxjs"
 import { map, take } from "rxjs/operators"
 import { LoadingGraphSchema, ProjectSchema } from "./flux-project/client-schemas";
 import { Context, ErrorLog } from "./models/context";
@@ -27,18 +27,52 @@ type IConsole = {
     error:(message?: any, ...optionalParams: any[])=> void,
 }
 
+export enum ProcessMessageKind{
+    Scheduled = "Scheduled",
+    Started = "Started",
+    Canceled = "Canceled",
+    Failed = "Failed",
+    Succeeded= "Succeeded",
+    Log= "Log"
+
+}
+export interface ProcessMessage{
+
+    kind: ProcessMessageKind
+    text: string
+}
+
 export class Process{
 
+    public readonly messages$ = new Subject<ProcessMessage>()
+
     constructor(
-        public readonly id: string,
         public readonly title: string,
-        public readonly scheduled$: Observable<any>,
-        public readonly started$: Observable<any>,
-        public readonly canceled$: Observable<any>,
-        public readonly failed$: Observable<any>,
-        public readonly succeeded$: Observable<any>,
-        public readonly context?: Context ){
+        public readonly context?: Context
+        ){
         }
+    
+    schedule(text: string = "scheduled"){
+        this.messages$.next({kind:ProcessMessageKind.Scheduled, text: text})
+    }
+    start(text: string = "Started"){
+        this.messages$.next({kind:ProcessMessageKind.Started, text: text})
+    }
+    cancel(text: string = "Canceled"){
+        this.messages$.next({kind:ProcessMessageKind.Canceled, text: text})
+        this.messages$.complete()
+    }
+    fail(text: string = "Failed"){
+        this.messages$.next({kind:ProcessMessageKind.Failed, text: text})
+        this.messages$.complete()
+    }
+    succeed(text: string = "Succeeded"){
+        this.messages$.next({kind:ProcessMessageKind.Succeeded, text: text})
+        this.messages$.complete()
+    }
+    log(text: string){
+        this.messages$.next({kind:ProcessMessageKind.Log, text: text})
+    }
 }
 
 export interface IEnvironment{
@@ -65,15 +99,10 @@ export interface IEnvironment{
 
     getLoadingGraph({libraries}:{libraries:{[key:string]: string}}) : Observable<LoadingGraphSchema>
 
-    exposeProcess({title, id, scheduled$, started$, canceled$, failed$, succeeded$, context}:{
+    exposeProcess({title, context}:{
         title:string, 
-        id:string, 
-        scheduled$: Observable<any>, 
-        started$: Observable<any>, 
-        canceled$: Observable<any>, 
-        failed$: Observable<any>, 
-        succeeded$: Observable<any>,
-        context?: Context})
+        context?: Context
+        }): Process
 
 }
 
@@ -88,13 +117,14 @@ export class Environment implements IEnvironment{
 
     public readonly console: IConsole
 
-    public readonly workerPool = new WorkerPool()
+    public readonly workerPool : WorkerPool
     
     constructor( data:
                 {executingWindow: Window, renderingWindow: Window , console?: Console }){
 
         this.renderingWindow = data.renderingWindow
         this.executingWindow = data.executingWindow
+        this.workerPool = new WorkerPool({environment:this})
         this.console = data.console || console
     }
 
@@ -135,27 +165,16 @@ export class Environment implements IEnvironment{
         return from(getLoadingGraph(body))
     }
 
-    exposeProcess({title, id, scheduled$, started$, canceled$, failed$, succeeded$, context}:{
+    exposeProcess({title, context}:{
         title:string, 
-        id:string, 
-        scheduled$: Observable<any>, 
-        started$: Observable<any>, 
-        canceled$: Observable<any>, 
-        failed$: Observable<any>, 
-        succeeded$: Observable<any>,
         context?: Context
-        }){
+        }): Process {
             let p = new Process(
-                id, 
-                title, 
-                scheduled$.pipe(take(1)), 
-                started$.pipe(take(1)), 
-                canceled$.pipe(take(1)), 
-                failed$.pipe(take(1)), 
-                succeeded$.pipe(take(1)),
+                title,
                 context
                 )
             this.processes$.next(p)
+            return p 
         }
 }
 
@@ -242,5 +261,11 @@ export class MockEnvironment implements IEnvironment{
 
         return of(this.loadingGraphResponses[key])
     }
-    exposeProcess(){}
+
+    exposeProcess({title, context}:{
+        title:string, 
+        context?: Context
+        }): Process {
+            throw Error(`exposeProcess not implemented in MockEnvironment` )
+        }
 }

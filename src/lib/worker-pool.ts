@@ -1,13 +1,13 @@
 
+import { env } from "node:process"
 import { Observable, of, ReplaySubject, Subject } from "rxjs"
 import { filter, map, reduce, switchMap, take, takeUntil, takeWhile, tap } from "rxjs/operators"
-import { IEnvironment } from "./environment"
+import { IEnvironment, Process } from "./environment"
 import { Context } from "./models/context"
 
 
 function entryPointWorker(messageEvent: MessageEvent){
     let message = messageEvent.data
-    console.log("Execute action in worker", message)
     let workerScope : any = self
     if(message.type == "Execute"){
 
@@ -23,6 +23,15 @@ function entryPointWorker(messageEvent: MessageEvent){
                         json: json
                     }
                 })
+            },
+            sendData: (data) => {
+                workerScope.postMessage({  
+                    type:"Data" , 
+                    data:{
+                        ...data,
+                        ...{taskId: message.data.taskId},
+                    }
+                })
             }
         }
         
@@ -36,12 +45,40 @@ function entryPointWorker(messageEvent: MessageEvent){
             }
         })
         try{
-            let result = entryPoint( {
+            let resultOrPromise = entryPoint( {
                 args: message.data.args, 
                 taskId: message.data.taskId,
                 workerScope: workerScope,
                 context
             }) 
+            if(resultOrPromise instanceof Promise){
+                resultOrPromise.then( 
+                    (result) => {
+                        workerScope.postMessage({  
+                            type:"Exit" , 
+                            data: {
+                                taskId: message.data.taskId,
+                                workerId: message.data.workerId,
+                                error: false,
+                                result: result
+                            }
+                        })
+                    })
+                    .catch(
+                    (error) => {
+                        workerScope.postMessage({  
+                            type:"Exit" , 
+                            data: {
+                                taskId: message.data.taskId,
+                                workerId: message.data.workerId,
+                                error: true,
+                                result: error
+                            }
+                        })
+                    })
+                return
+            }
+            let result = resultOrPromise
             workerScope.postMessage({  
                 type:"Exit" , 
                 data: {
@@ -53,7 +90,6 @@ function entryPointWorker(messageEvent: MessageEvent){
             })
         }
         catch(e){
-            console.error(e)
             workerScope.postMessage({  
                 type:"Exit" , 
                 data: {
@@ -66,8 +102,12 @@ function entryPointWorker(messageEvent: MessageEvent){
             return 
         }
     }
+    if(message.type == "installVariables"){ 
+        message.data.forEach( d => {
+            workerScope[d.id] = d.value
+        })
+    }
     if(message.type == "installFunctions"){ 
-        console.log("Install functions", message)
         message.data.forEach( d => {
             workerScope[d.id] = new Function(d.target)()
         })
@@ -76,9 +116,7 @@ function entryPointWorker(messageEvent: MessageEvent){
         //let GlobalScope = _GlobalScope ? _GlobalScope : self as any
         let GlobalScope = self
         var exports = {}
-        console.log(`Installing ${message.data.scriptId}`, message)
         if(!message.data.import){
-            console.log(`Installing ${message.data.scriptId} using default import`)
             workerScope.postMessage({  
                 type:"Log" , 
                 data: {
@@ -87,7 +125,6 @@ function entryPointWorker(messageEvent: MessageEvent){
                 }
             }) 
             new Function('document','exports','__dirname', message.data.src )( GlobalScope, exports, "")
-            console.log("exports", exports)
         }
         else{
             workerScope.postMessage({  
@@ -111,14 +148,26 @@ function entryPointWorker(messageEvent: MessageEvent){
         if(message.data.sideEffects){
             let sideEffectFunction = new Function(message.data.sideEffects)()
             let promise = sideEffectFunction(GlobalScope, exports)
-            promise.then( () => {
+            if(promise instanceof Promise) {
+                
+                promise.then( () => {
+                    workerScope.postMessage({  
+                        type:"DependencyInstalled" , 
+                        data: {
+                            scriptId: message.data.scriptId
+                        }
+                    })
+                })
+            }
+            else{
                 workerScope.postMessage({  
                     type:"DependencyInstalled" , 
                     data: {
                         scriptId: message.data.scriptId
                     }
                 })
-            })
+            }
+            
         }else{
             workerScope.postMessage({  
                 type:"DependencyInstalled" , 
@@ -138,9 +187,20 @@ interface WorkerDependency{
     import?: (GlobalScope, src) => void,
     sideEffects?: (globalScope, exports) => void
 }
+
 interface WorkerFunction<T>{
     id: string
     target: T
+}
+
+interface WorkerVariable<T>{
+    id: string
+    value: T
+}
+
+export interface WorkerContext{
+    info: (text:string, data?: any) => void 
+    sendData: (data) => void
 }
 
 export class WorkerPool{
@@ -156,12 +216,17 @@ export class WorkerPool{
 
     dependencies : WorkerDependency[] = []
     functions : WorkerFunction<unknown>[] = []
+    variables : WorkerVariable<unknown>[] = []
 
     workerReleased$ = new Subject<{workerId:WorkerId, taskId: string}>()
 
     backgroundContext = new Context("background management", {})
 
-    constructor(){
+    environment : IEnvironment
+
+    constructor({environment}: {environment: IEnvironment} ){
+
+        this.environment = environment
         let subs = this.workerReleased$.subscribe( ({workerId, taskId}) => {
 
             this.busyWorkers = this.busyWorkers.filter( (wId) => wId!=workerId)
@@ -171,12 +236,11 @@ export class WorkerPool{
     }
 
 
-    schedule<TArgs=any>({title, entryPoint, args, targetWorkerId, environment, context}: { 
+    schedule<TArgs=any>({title, entryPoint, args, targetWorkerId, context}: { 
         title: string,
         entryPoint: ({ args, taskId, context, workerScope }:{ args:TArgs, taskId: string, context: any, workerScope: any }) => void,
         args: TArgs,
         targetWorkerId?: string,
-        environment?: IEnvironment,
         context: Context
     } ): Observable<any> {
 
@@ -184,19 +248,13 @@ export class WorkerPool{
             
             let taskId = `t${Math.floor(Math.random()*1e6)}`
             let channel$ = new Subject()
-            environment && environment.exposeProcess({
+            let p = this.environment.exposeProcess({
                 title,
-                id: taskId,
-                scheduled$:of({}),
-                started$: channel$.pipe( filter( (message: any) => message.type == "Start")),
-                canceled$: channel$.pipe( filter( (message: any) => message.type == "Cancel")),
-                failed$: channel$.pipe( filter( (message: any) => message['type'] == 'Exit' && message['data'].error)),
-                succeeded$: channel$.pipe( filter( (message: any) => message['type'] == 'Exit' && !message['data'].error)),
                 context: ctx
             })
-            let r$ = this.instrumentChannel$(channel$, taskId, context)            
+            p.schedule()
 
-            console.log(`WORKER POOL: ###### Schedule ${title} with ${taskId} ######` )
+            let r$ = this.instrumentChannel$(channel$, p, taskId, context)            
 
             if( targetWorkerId && !this.workers[targetWorkerId]){
                 throw Error("Provided workerId not known")
@@ -239,17 +297,30 @@ export class WorkerPool{
         
     }
 
-    import( {sources, functions} : { 
+    import( {sources, functions, variables} : { 
         sources: WorkerDependency[],
-        functions: WorkerFunction<unknown>[]
+        functions: WorkerFunction<unknown>[],
+        variables: WorkerVariable<unknown>[]
     }){
         this.dependencies = [...this.dependencies, ...sources]
         this.functions = [...this.functions, ...functions]
+        this.variables = [...this.variables, ...variables]
         Object.values(this.workers).forEach( (worker) => 
-        this.installDependencies(worker, sources, functions) )
+        this.installDependencies(worker, sources, functions, variables) )
     }
 
-    installDependencies(worker, sources, functions){
+    installDependencies(worker, sources, functions, variables){
+
+        worker.postMessage({
+            type: "installVariables",
+            data: variables
+        })
+
+        let dataFcts = functions.map( (fct) => ({id: fct.id, target: `return ${String(fct.target)}`}))
+        worker.postMessage({
+            type: "installFunctions",
+            data:dataFcts
+        })
 
         sources.forEach( (dependency) => {
             worker.postMessage({
@@ -261,47 +332,55 @@ export class WorkerPool{
                     sideEffects: dependency.sideEffects ? `return ${String(dependency.sideEffects)}` : undefined
                 }
             })
-        })
-        let dataFcts = functions.map( (fct) => ({id: fct.id, target: `return ${String(fct.target)}`}))
-        worker.postMessage({
-            type: "installFunctions",
-            data:dataFcts
-        })
-        
+        })        
     }
 
-    instrumentChannel$( channel$: Subject<any>, taskId: string, context: Context): Observable<any>{
+    instrumentChannel$( 
+        originalChannel$: Subject<any>, 
+        exposedProcess: Process,
+        taskId: string, 
+        context: Context
+        ): Observable<any>{
+
+        let channel$ = originalChannel$.pipe(
+            takeWhile( message => message['type'] != 'Exit', true)
+        )
 
         channel$.pipe(
             filter( (message:any) => message.type == "Start"),
             take(1)
         ).subscribe( (message) => {
             context.info("worker started", message)
+            exposedProcess.start()
         })
+
         channel$.pipe(
             filter( (message:any) => message.type == "Exit"),
             take(1)
         ).subscribe( (message) => {
-            message.data.error 
-                ? context.info("worker exited abnormally", message)
-                : context.info("worker exited normally", message)
+            if(message.data.error ){
+                context.info("worker exited abnormally", message)
+                exposedProcess.fail(message.data.result)
+                return
+            }
+            exposedProcess.succeed()
+            context.info("worker exited normally", message)
         })
 
         channel$.pipe(
-            tap( (message: any) =>  {
-                if(message.data.taskId != taskId)
-                    throw Error(`Mismatch in taskId: expected ${taskId} but got from message ${message.data.taskId}`)
-                console.log(`WORKER POOL: Got forwarded message`, message)
-            }),
-            filter( (message:any) => { 
-                return message.type == "Log"
-            })
+            filter((message: any) => message.data.taskId != taskId)
+        ).subscribe( (message: any) =>  {
+            throw Error(`Mismatch in taskId: expected ${taskId} but got from message ${message.data.taskId}`)
+        })
+        
+        channel$.pipe(
+            filter( (message:any) =>  message.type == "Log" )
         ).subscribe( (message) => {
+            exposedProcess.log(message.data.text)
             context.info(message.data.text, message.data.json)
         })
 
         return channel$.pipe( 
-            takeWhile( message => message['type'] != 'Exit', true),
             map( message => {
                 if( message['type'] == 'Exit' && message['data'].error )
                     throw Error(String(message['data'].result))
@@ -342,13 +421,12 @@ export class WorkerPool{
 
             worker.onmessage = ({data}) => {
                 if(data.type == "DependencyInstalled"){
-                    console.log(`WORKER POOL #${workerId}: Dependency installed`)
                     this.channels$[workerId].next(data) 
                 }
             }
 
             this.workers[workerId] = worker
-            this.installDependencies(worker, this.dependencies, this.functions)
+            this.installDependencies(worker, this.dependencies, this.functions, this.variables)
 
             let dependencyCount = Object.keys(this.dependencies).length
             if( dependencyCount == 0 ){
@@ -358,7 +436,7 @@ export class WorkerPool{
             let worker$ = this.channels$[workerId].pipe(
                 filter( (message) => message.type == "DependencyInstalled"),
                 take(dependencyCount),
-                reduce( (acc,e) => { acc.concat[e]}, []),
+                reduce( (acc,e) => { return acc.concat(e)}, []),
                 map( () => worker )
             )
             return {workerId, worker$}
@@ -390,7 +468,6 @@ export class WorkerPool{
                 this.workerReleased$.next({taskId:message.data.taskId, workerId})
             })
             worker.onmessage = ({ data }) => {
-                console.log(`WORKER POOL #${workerId} #${taskId}: Got a message`, data)
                 if(data.data.taskId == taskId)
                     channel$.next(data)
             }
