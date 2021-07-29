@@ -121,7 +121,7 @@ function entryPointWorker(messageEvent: MessageEvent){
                 type:"Log" , 
                 data: {
                     logLevel: "info",
-                    text: `Installing ${message.data.scriptId} using default import`
+                    text: `Installing ${message.data.id} using default import`
                 }
             }) 
             new Function('document','exports','__dirname', message.data.src )( GlobalScope, exports, "")
@@ -131,7 +131,7 @@ function entryPointWorker(messageEvent: MessageEvent){
                 type:"Log" , 
                 data: {
                     logLevel: "info",
-                    text: `Installing ${message.data.scriptId} using provided import function: ${message.data.import}`
+                    text: `Installing ${message.data.id} using provided import function: ${message.data.import}`
                 }
             })
             let importFunction = new Function(message.data.import)()
@@ -141,7 +141,7 @@ function entryPointWorker(messageEvent: MessageEvent){
             type:"Log" , 
             data: {
                 logLevel: "info",
-                text: `Installing ${message.data.scriptId} using provided import function: ${message.data.import}`
+                text: `Installing ${message.data.id} using provided import function: ${message.data.import}`
             }
         }) 
 
@@ -154,7 +154,7 @@ function entryPointWorker(messageEvent: MessageEvent){
                     workerScope.postMessage({  
                         type:"DependencyInstalled" , 
                         data: {
-                            scriptId: message.data.scriptId
+                            id: message.data.id
                         }
                     })
                 })
@@ -163,7 +163,7 @@ function entryPointWorker(messageEvent: MessageEvent){
                 workerScope.postMessage({  
                     type:"DependencyInstalled" , 
                     data: {
-                        scriptId: message.data.scriptId
+                        id: message.data.id
                     }
                 })
             }
@@ -172,7 +172,7 @@ function entryPointWorker(messageEvent: MessageEvent){
             workerScope.postMessage({  
                 type:"DependencyInstalled" , 
                 data: {
-                    scriptId: message.data.scriptId
+                    id: message.data.id
                 }
             })
         }
@@ -209,6 +209,7 @@ export class WorkerPool{
 
     workers : {[key:string]: Worker}= {}
     channels$ : {[key:string]: Subject<any> } = {}
+    installedDependencies : {[key:string]: Array<string> } = {}
 
     tasksQueue : {[key:string]: Array<{taskId:string, args: unknown, channel$: Subject<any>, entryPoint: any}>}= {}
     runningTasks: Array<{workerId: string, taskId:string}>= []
@@ -278,7 +279,11 @@ export class WorkerPool{
             let {workerId, worker$} = this.getWorker$(ctx)
             worker$.pipe(
                 map( (worker) => {
-                    ctx.info("Got a worker ready")
+                    ctx.info(
+                        `Got a worker ready ${workerId}`, 
+                        {   installedDependencies: this.installedDependencies[workerId],
+                            requiredDependencies: this.dependencies.map( d => d.id)
+                        })
                     this.tasksQueue[workerId].push( 
                         {
                             entryPoint,
@@ -306,7 +311,7 @@ export class WorkerPool{
         this.functions = [...this.functions, ...functions]
         this.variables = [...this.variables, ...variables]
         Object.values(this.workers).forEach( (worker) => 
-        this.installDependencies(worker, sources, functions, variables) )
+            this.installDependencies(worker, sources, functions, variables) )
     }
 
     installDependencies(worker, sources, functions, variables){
@@ -327,7 +332,7 @@ export class WorkerPool{
                 type: "installScript",
                 data:{
                     src:dependency.src,
-                    scriptId: dependency.id,
+                    id: dependency.id,
                     import: dependency.import ? `return ${String(dependency.import)}` : undefined,
                     sideEffects: dependency.sideEffects ? `return ${String(dependency.sideEffects)}` : undefined
                 }
@@ -397,7 +402,7 @@ export class WorkerPool{
             let idleWorkerId = Object.keys(this.workers).find( workerId => !this.busyWorkers.includes(workerId) )
 
             if(idleWorkerId){
-                ctx.info("return idle worker")
+                ctx.info(`return idle worker ${idleWorkerId}`)
                 return { workerId: idleWorkerId, worker$: of(this.workers[idleWorkerId])}
             }
             if(Object.keys(this.workers).length < this.poolSize){
@@ -412,15 +417,22 @@ export class WorkerPool{
         return context.withChild("create worker", (ctx) => {
             
             let workerId = `w${Math.floor(Math.random()*1e6)}` 
+            ctx.info(
+                `Create worker ${workerId}`, 
+                {   requiredDependencies: this.dependencies.map( d => d.id)
+                })
+
             this.channels$[workerId] = new Subject()
             this.tasksQueue[workerId] = []
 
             var blob = new Blob(['self.onmessage = ', entryPointWorker.toString()], { type: 'text/javascript' });
             var url = URL.createObjectURL(blob);
             let worker = new Worker(url)
+            this.installedDependencies[workerId] = []
 
             worker.onmessage = ({data}) => {
                 if(data.type == "DependencyInstalled"){
+                    this.installedDependencies[workerId].push(data.id)
                     this.channels$[workerId].next(data) 
                 }
             }
