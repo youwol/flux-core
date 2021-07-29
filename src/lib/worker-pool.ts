@@ -425,7 +425,6 @@ export class WorkerPool{
                 }
             }
 
-            this.workers[workerId] = worker
             this.installDependencies(worker, this.dependencies, this.functions, this.variables)
 
             let dependencyCount = Object.keys(this.dependencies).length
@@ -437,7 +436,8 @@ export class WorkerPool{
                 filter( (message) => message.type == "DependencyInstalled"),
                 take(dependencyCount),
                 reduce( (acc,e) => { return acc.concat(e)}, []),
-                map( () => worker )
+                map( () => worker ),
+                tap( () => this.workers[workerId] = worker)
             )
             return {workerId, worker$}
         })
