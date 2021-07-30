@@ -211,7 +211,7 @@ export class WorkerPool{
     channels$ : {[key:string]: Subject<any> } = {}
     installedDependencies : {[key:string]: Array<string> } = {}
 
-    tasksQueue : {[key:string]: Array<{taskId:string, args: unknown, channel$: Subject<any>, entryPoint: any}>}= {}
+    tasksQueue : Array<{taskId:string, targetWorkerId?: string, args: unknown, channel$: Subject<any>, entryPoint: any}>= []
     runningTasks: Array<{workerId: string, taskId:string}>= []
     busyWorkers : Array<string> = []
 
@@ -232,6 +232,7 @@ export class WorkerPool{
 
             this.busyWorkers = this.busyWorkers.filter( (wId) => wId!=workerId)
             this.runningTasks = this.runningTasks.filter( (task) => task.taskId != taskId)
+
             this.pickTask(workerId, this.backgroundContext)
         })
     }
@@ -261,12 +262,13 @@ export class WorkerPool{
                 throw Error("Provided workerId not known")
             }
             if(targetWorkerId && this.workers[targetWorkerId]){
-                this.tasksQueue[targetWorkerId].push( 
+                this.tasksQueue.push( 
                     {
                         entryPoint,
                         args,
                         taskId,
-                        channel$
+                        channel$,
+                        targetWorkerId
                     }
                 )
 
@@ -276,15 +278,27 @@ export class WorkerPool{
                 
                 return r$
             }
-            let {workerId, worker$} = this.getWorker$(ctx)
+            let worker$ = this.getWorker$(ctx)
+            if(!worker$){
+                this.tasksQueue.push( 
+                    {
+                        entryPoint,
+                        args,
+                        taskId,
+                        channel$
+                    }
+                )
+                return r$
+            }
             worker$.pipe(
-                map( (worker) => {
+                map( ({workerId, worker}) => {
+                    
                     ctx.info(
                         `Got a worker ready ${workerId}`, 
                         {   installedDependencies: this.installedDependencies[workerId],
                             requiredDependencies: this.dependencies.map( d => d.id)
                         })
-                    this.tasksQueue[workerId].push( 
+                    this.tasksQueue.push( 
                         {
                             entryPoint,
                             args,
@@ -395,7 +409,7 @@ export class WorkerPool{
     }
 
 
-    getWorker$(context: Context) : {workerId: string, worker$: Observable<Worker> } {
+    getWorker$(context: Context) : Observable<{workerId: string, worker:Worker}>{
 
         return context.withChild("get worker", (ctx) => {
             
@@ -403,16 +417,17 @@ export class WorkerPool{
 
             if(idleWorkerId){
                 ctx.info(`return idle worker ${idleWorkerId}`)
-                return { workerId: idleWorkerId, worker$: of(this.workers[idleWorkerId])}
+                return of({workerId:idleWorkerId, worker:this.workers[idleWorkerId]})
             }
             if(Object.keys(this.workers).length < this.poolSize){
 
                 return this.createWorker$(ctx)
             }
+            return undefined
         })
     }
 
-    createWorker$(context: Context):{workerId: string, worker$: Observable<Worker> }{
+    createWorker$(context: Context): Observable<{workerId: string, worker:Worker}> {
 
         return context.withChild("create worker", (ctx) => {
             
@@ -423,7 +438,6 @@ export class WorkerPool{
                 })
 
             this.channels$[workerId] = new Subject()
-            this.tasksQueue[workerId] = []
 
             var blob = new Blob(['self.onmessage = ', entryPointWorker.toString()], { type: 'text/javascript' });
             var url = URL.createObjectURL(blob);
@@ -442,16 +456,19 @@ export class WorkerPool{
             let dependencyCount = Object.keys(this.dependencies).length
             if( dependencyCount == 0 ){
                 ctx.info("No dependencies to load: worker ready",{workerId: workerId, worker})
-                return { workerId, worker$: of(worker) }
+                return of({workerId, worker}) 
             }
-            let worker$ = this.channels$[workerId].pipe(
+            let r$ = this.channels$[workerId].pipe(
                 filter( (message) => message.type == "DependencyInstalled"),
                 take(dependencyCount),
                 reduce( (acc,e) => { return acc.concat(e)}, []),
                 map( () => worker ),
-                tap( () => this.workers[workerId] = worker)
+                tap( () => this.workers[workerId] = worker),
+                map( (worker) => {
+                    return {workerId, worker}
+                })
             )
-            return {workerId, worker$}
+            return r$
         })
     }
 
@@ -459,16 +476,18 @@ export class WorkerPool{
      * Start a worker with first task in its queue
      */
     pickTask(workerId: string, context: Context) {
-
+        
         context.withChild("pickTask", (ctx) => {
 
-            if(this.tasksQueue[workerId].length == 0 ){
-                ctx.info("No task to pick")
+            if(this.tasksQueue.filter( task => task.targetWorkerId==undefined || task.targetWorkerId==workerId).length == 0 ){
                 return
             }
             this.busyWorkers.push(workerId)
-            let {taskId, entryPoint, args, channel$} = this.tasksQueue[workerId][0]
-            this.tasksQueue[workerId].shift()
+            let {taskId, entryPoint, args, channel$} = this.tasksQueue
+                .find( (t) => t.targetWorkerId ? t.targetWorkerId===workerId : true)
+
+            this.tasksQueue = this.tasksQueue.filter( t => t.taskId != taskId)
+
             this.runningTasks.push({workerId, taskId})
             let worker = this.workers[workerId]
             
