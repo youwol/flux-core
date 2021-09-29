@@ -18,7 +18,6 @@ export * from './lib/modules/factory-pack-core';
 export * from './lib/modules/group.module';
 //export * from './lib/modules/map-reduce.plugin';
 export * from './lib/modules/reactive-html';
-//export * from './lib/modules/replication-utils';
 export * from './lib/modules/schemas';
 export * from './lib/modules/test-modules';
 export * from './lib/environment';

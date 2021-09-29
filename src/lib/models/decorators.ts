@@ -235,7 +235,7 @@ export function BuilderView( {namespace, icon, render}: {
 export function RenderView<T extends ModuleFlux>({namespace, wrapperDivAttributes, render}: {
   namespace: any, 
   wrapperDivAttributes?: (module: T) => { class?: string, style?:{[key:string]: string}}, 
-  render?: (module: T) => HTMLElement | string}
+  render?: (module: T) => HTMLElement | HTMLElement[] | string}
   ) {
 
   wrapperDivAttributes = wrapperDivAttributes || (() => ({}) )
@@ -255,7 +255,7 @@ export function RenderView<T extends ModuleFlux>({namespace, wrapperDivAttribute
         super(module, wrapperDivAttributes) 
       }
 
-      render() : HTMLElement {
+      render() : HTMLElement | HTMLElement[]{
         let view   = render(this.module)
         if (typeof view =="string"){
 
@@ -263,7 +263,7 @@ export function RenderView<T extends ModuleFlux>({namespace, wrapperDivAttribute
             renderingDiv.innerHTML = view
             return renderingDiv
         }
-        return view
+        return view as any
       }
     }
 }

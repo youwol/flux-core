@@ -11,6 +11,7 @@ import { filter, map, skip, take } from 'rxjs/operators'
 import { ConfigurationError, ContractUnfulfilledError } from '..'
 import { ModuleDataEmittor } from '../lib/modules/test-modules'
 console.log = () => {}
+console.error = () => {}
 /*
 In this example we define a module that does operation on two numbers, either addition or multiplication.
 It features one input that is expected to contains two numbers (implicit, this is explained latter)

@@ -9,12 +9,15 @@ export class Graph{
     workflow: Workflow
     observers = []
     constructor( branches: Array<Branch> , public readonly modules: Array<ModuleFlux>, 
-        public readonly withConnections: Array<Connection> = [], layerTree:LayerTree){
+        public readonly withConnections: Array<Connection> = []){
         
         this.branches   = branches        
         let connections = branches.reduce( (acc,b) => acc.concat(this._createConnections(b)), []).concat(withConnections)
         let plugins     = modules.filter( m => m instanceof PluginFlux) as Array<PluginFlux<any>>
-        this.workflow   = new Workflow([...modules,...plugins],connections,plugins, layerTree)
+        this.workflow   = new Workflow({
+            modules:[...modules,...plugins],
+            connections,plugins 
+        })
         this.observers  = branches.reduce( (acc,b) => acc.concat(b.observers), [])
     }
 

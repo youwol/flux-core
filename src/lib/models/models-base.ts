@@ -1607,7 +1607,7 @@ export abstract class ModuleRendererRun<T extends ModuleFlux> {
     /**
      * rendering function of the module
      */
-    abstract render() : HTMLElement
+    abstract render() : HTMLElement | HTMLElement[]
 }
 
 /**

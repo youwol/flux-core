@@ -45,24 +45,19 @@ export function renderTemplate(
     .map( c => [c, new c.Factory.RenderView(c)])
 
     modulesToRender
-    .filter(([mdle]:[ModuleFlux]) => !(mdle instanceof GroupModules.Module) )
     .forEach( ([mdle,renderer]:[ModuleFlux,any]) => { 
         let wrapperDiv = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
         if(wrapperDiv){
-            applyWrapperDivAttributes(wrapperDiv, mdle, options)
-            let divChild = renderer.render()
-            wrapperDiv.appendChild(divChild) 
+            wrapperDiv.innerHTML = ""
+            let divChildren = [renderer.render()].flat()
+            options.applyWrapperAttributes && applyWrapperDivAttributes(wrapperDiv, mdle, options)
+            divChildren.forEach( (child: HTMLElement)=> wrapperDiv.appendChild(child))
+            
             if(mdle["renderedElementDisplayed$"])
-                mdle["renderedElementDisplayed$"].next(divChild)
+                mdle["renderedElementDisplayed$"].next(wrapperDiv)
         }
     })
-    modulesToRender
-    .filter(([mdle]:[ModuleFlux,any]) => mdle instanceof GroupModules.Module )
-    .forEach( ([mdle]:[ModuleFlux,any]) => { 
-        let d = templateLayout.querySelector("#"+mdle.moduleId) as HTMLDivElement
-        if(d && mdle["renderedElementDisplayed$"] )
-            mdle["renderedElementDisplayed$"].next(d)
-    })
+    
     return templateLayout
 }
 

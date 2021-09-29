@@ -19,8 +19,39 @@ export namespace Component {
     })
     export class PersistentData extends Schemas.GroupModuleConfiguration{
                
-        constructor( {...others } :{layout?:string} ={} ) {
+        @Property({
+            description: "The HTML definition",
+            type:'code',
+            editorConfiguration: {                
+                mode: "xml",
+                htmlMode: true
+            }
+        })
+        html: string = ""
+
+        @Property({
+            description: "The CSS definition",
+            type:'code',
+            editorConfiguration: {
+                mode: "css"
+            }
+        })
+        css: string = ""
+
+
+        constructor( {html, css, ...others } :{
+            html?:string, 
+            css?:string,
+            classes?: string
+        } ={} ) {
             super( Object.assign(others, {}) as any)
+
+            if(html)
+                this.html = html
+
+            if(css)
+                this.css = css
+
         }
     }
 
@@ -52,13 +83,69 @@ export namespace Component {
         constructor(params) {
             super(params)
         }
+
+        getHTML({recursive}:{recursive:boolean}) : HTMLDivElement {
+
+            let toHtml = (component: Module) => {
+                let content = component.getPersistentData<PersistentData>().html
+                var template = document.createElement('template');
+                template.innerHTML = (content as any).trim();
+                return template.content.firstChild as HTMLDivElement
+            }
+            let root = toHtml(this)
+            if(!root || !recursive)
+                return root
+
+            let childrenComponents = this.getAllChildren()
+                .filter( child => child instanceof Module) as Array<Module> 
+            
+            let divComponents = childrenComponents
+            .reduce((acc,component) => ({...acc,...{[component.moduleId]:toHtml(component)}})
+                    ,{})
+    
+            while(Object.entries(divComponents).length > 0 ){
+                let previousLength = Object.entries(divComponents).length
+                Array.from(root.querySelectorAll('.flux-component'))
+                .filter( (item) => divComponents[item.id] != undefined)
+                .forEach( (htmlDiv) =>{
+                    htmlDiv.replaceWith(divComponents[htmlDiv.id])
+                    delete divComponents[htmlDiv.id]
+                })
+                if(Object.entries(divComponents).length == previousLength)
+                    break
+            }
+            return root
+        }
+
+        getCSS({recursive, asString}:{recursive:boolean, asString} = {recursive:false, asString:true}) : CSSStyleSheet | string {
+            let css = () => {
+                if(!recursive)
+                return this.getPersistentData<PersistentData>().css
+
+                return this.getAllChildren()
+                .filter( child => child instanceof Module) 
+                .map( child => child.getPersistentData<PersistentData>()) 
+                .reduce( (acc: string, e: PersistentData) => acc+"\n"+e.css , this.getPersistentData<PersistentData>().css)
+            }   
+            let css_string = css()
+            
+            if(asString)
+                return css_string
+
+            let styleSheet = new CSSStyleSheet()
+            css_string.split('}')
+            .filter( rule => rule != "")
+            .forEach( rule => styleSheet.insertRule(rule) )
+            return styleSheet
+        }
     }
     
 
     export function renderHtmlElement(mdle:Module){
-        let div = document.createElement('div')
-        div.id=mdle.moduleId
-        renderTemplate(div, mdle.getAllChildren())
-        return div
+
+        let div = mdle.getHTML({recursive: false})
+        // The outer element of div is the 'wrapper div' itself => we do not want to include it as 
+        // child of the wrapper div encountered when parsing
+        return Array.from<HTMLElement>(renderTemplate(div, mdle.getAllChildren()).children as any)
     }
 }

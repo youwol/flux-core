@@ -1,12 +1,14 @@
 import { LayerTree, Workflow } from '../flux-project/core-models';
 import { ModuleFlux, Connection, SlotRef, Pipe,  
-    instanceOfSideEffects } from '../models/models-base';
+    instanceOfSideEffects, Factory, 
+    ModuleConfiguration} from '../models/models-base';
+import {Cache} from '../models/cache'
 import { Schemas } from './schemas'
 import { Flux, BuilderView, Schema } from '../models/decorators'
 import { createHTMLElement } from './reactive-html'
 import { packCore } from './factory-pack-core';
 import { createPlug, createPlugCircle, genericModulePlotData } from '../models/drawer-builder';
-import { StaticStorage } from '../../index';
+import { IEnvironment, StaticStorage } from '../../index';
 import { freeContract } from '../models/contract';
 import { Context } from '../models/context';
 
@@ -85,7 +87,6 @@ export namespace GroupModules {
     })
     export class Module extends ModuleFlux{
 
-        public readonly layerId: string
         public readonly workflowGetter: (instance: Module) => Workflow
 
         public readonly internalEntries = new Array<Pipe<any>>()
@@ -95,11 +96,21 @@ export namespace GroupModules {
 
         public readonly staticStorage: StaticStorage
 
-        constructor(params) {
-            super(params)
-            this.staticStorage = params.staticStorage
-            this.layerId = params.layerId
-            this.workflowGetter = params.workflowGetter
+        constructor({staticStorage, workflowGetter, moduleId, configuration, Factory, cache, environment, helpers} : {
+            staticStorage?: StaticStorage, 
+            layerId: string, 
+            workflowGetter:(instance: Module) => Workflow, 
+            moduleId?: string, 
+            configuration: ModuleConfiguration, 
+            environment: IEnvironment;
+            Factory: Factory, 
+            cache?: Cache, 
+            helpers?: {[key:string]: any}
+        }) {
+            super({moduleId, configuration, Factory, cache, environment, helpers})
+
+            this.staticStorage = staticStorage
+            this.workflowGetter = workflowGetter
             let staticConf = this.getPersistentData<PersistentData>()
 
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
@@ -164,24 +175,30 @@ export namespace GroupModules {
 
         getAllChildren(): Array<ModuleFlux> {
 
+            let getChildrenRec = (mdle: Module) : ModuleFlux[] => {
+                let directs = mdle.getDirectChildren()
+                let indirects = directs.filter( mdle => mdle instanceof Module).map((mdle: Module)=>getChildrenRec(mdle)).flat()
+                return directs.concat(...indirects)
+            }
             let workflow = this.workflowGetter(this)
-            let layer = workflow.rootLayerTree.getLayerRecursive((layer) => layer.layerId == this.layerId)
-            let modulesId = layer.getChildrenModules()
+            let modules = getChildrenRec(this)
             let plugins = workflow.plugins.filter(plugin => {
-                return plugin.parentModule && modulesId.includes(plugin.parentModule.moduleId) // (plugin instanceof PluginFlux) better => but need only one flux-lib-core loaded
-            })
-            let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
+                return plugin.parentModule && modules.map( mdle => mdle.moduleId).includes(plugin.parentModule.moduleId) // (plugin instanceof PluginFlux) better => but need only one flux-lib-core loaded
+            })            
             return [...modules, ...plugins]
         }
 
         getDirectChildren(): Array<ModuleFlux> {
 
             let workflow = this.workflowGetter(this)
-            let layer = workflow.rootLayerTree.getLayerRecursive( (layer) => layer.layerId == this.layerId)
-            let chidlrenId = layer.moduleIds
-            let plugins = workflow.plugins.filter(plugin => chidlrenId.includes(plugin.parentModule.moduleId))
-            let modules = chidlrenId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
+            let modulesId = this.getPersistentData<PersistentData>().getModuleIds()
+            let plugins = workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
+            let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
             return [...modules, ...plugins]
+        }
+
+        getModuleIds() : Array<string> {
+            return this.getPersistentData<PersistentData>().getModuleIds()
         }
 
         getConnections() {
@@ -196,15 +213,6 @@ export namespace GroupModules {
             outputs: { implicits: Array<SlotRef>, explicits: Array<SlotRef> }
         } {
             let workflow = this.workflowGetter(this)
-            let layer = workflow && workflow.rootLayerTree 
-                ? workflow.rootLayerTree.getLayerRecursive((layer) => layer.layerId == this.layerId) 
-                : undefined
-
-            if (!layer)
-                return {
-                    inputs: { implicits: [], explicits: this.getExplicitInputs() },
-                    outputs: { implicits: [], explicits: this.getExplicitOutputs() }
-                }
 
             let allModulesId = this.getAllChildren().map(mdle => mdle.moduleId)
 
@@ -236,11 +244,6 @@ export namespace GroupModules {
             return this.outputSlots.filter((out) => !this.internalEntrySlots.map(out => out.slotId).includes(out.slotId))
         }
 
-        getLayerTree(): LayerTree {
-            let workflow = this.workflowGetter(this)
-            let layer = workflow.rootLayerTree.getLayerRecursive((layer) => layer.layerId == this.layerId)
-            return layer
-        }
     }
 
     //----------------
@@ -282,7 +285,7 @@ export namespace GroupModules {
                             attributes: { d: "M448 344v112a23.94 23.94 0 0 1-24 24H312c-21.39 0-32.09-25.9-17-41l36.2-36.2L224 295.6 116.77 402.9 153 439c15.09 15.1 4.39 41-17 41H24a23.94 23.94 0 0 1-24-24V344c0-21.4 25.89-32.1 41-17l36.19 36.2L184.46 256 77.18 148.7 41 185c-15.1 15.1-41 4.4-41-17V56a23.94 23.94 0 0 1 24-24h112c21.39 0 32.09 25.9 17 41l-36.2 36.2L224 216.4l107.23-107.3L295 73c-15.09-15.1-4.39-41 17-41h112a23.94 23.94 0 0 1 24 24v112c0 21.4-25.89 32.1-41 17l-36.19-36.2L263.54 256l107.28 107.3L407 327.1c15.1-15.2 41-4.5 41 16.9z" }
                         }
                     ],
-                    onclick: (d) => module.Factory.BuilderView.notifier$.next({ type: 'layerFocused', data: module.layerId })
+                    onclick: (d) => module.Factory.BuilderView.notifier$.next({ type: 'layerFocused', data: module.moduleId })
                 }
             }
         })
@@ -323,7 +326,7 @@ export namespace GroupModules {
                         children: {
                             "reduce-bg": { 
                                 tag: 'circle', attributes: { r: `${headerHeight / 3}px` },
-                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.layerId }) 
+                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId }) 
                             },
                             "reduce-icon": { 
                                 tag:'g', style:{transform:`translateX(-4px) translateY(-6.5px) scale(0.3)`}, 
@@ -334,7 +337,7 @@ export namespace GroupModules {
                                             reduce:{tag:'path', 
                                             attributes:{d:"M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"}}
                                 },
-                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.layerId }) 
+                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId }) 
                             }} }}
                     },
                     inputs: { tag: 'g', children: inputs.reduce((acc, input, i) => Object.assign(acc, toPlug('input', input, i)), {}) },

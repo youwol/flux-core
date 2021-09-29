@@ -69,7 +69,9 @@ export interface LayerTreeSchema{
     layerId: string,
     moduleIds: Array<string>,
     title: string,
-    children: Array<LayerTreeSchema>
+    children: Array<LayerTreeSchema>,
+    html: string,
+    css: string
 }
 
 /**
@@ -126,6 +128,7 @@ export interface RunnerRenderingSchema{
 export interface ProjectSchema{
 
     name: string
+    schemaVersion: string
     description: string
     runnerRendering: RunnerRenderingSchema,
     builderRendering: BuilderRenderingSchema,

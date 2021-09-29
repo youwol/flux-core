@@ -21,12 +21,28 @@ test("simple component with label display", (done) =>{
     let withConnections = [
         new Connection(new SlotRef(`explicitInput0_in`,'component'),modules.module1.inputSlots[0])
     ]
-    let layerTree = new LayerTree("root","root layer",[new LayerTree("componentLayer","component",[],["module1","label"])],["module0","module3"])
+    let layerTree = new LayerTree({
+        layerId: "root",
+        title: "root layer",
+        children:[
+            new LayerTree({
+                layerId:"componentLayer",
+                title: "component",
+                children: [],
+                moduleIds:["module1","label"],
+                html: "<div id='component'><label> result: </label><div id='label'></div></div>",
+                css:""
+            })
+        ],
+        moduleIds:["module0","module3"],
+        html: "",
+        css: ""
+    })
     graph = parseGraph( { branches, modules, withConnections, layerTree } )
     
     new Runner( graph ) 
     let div = document.createElement("div")
-    div.innerHTML = "<div id='template'><div id='component'><label> result: </label><div id='label'></div></div></div>"
+    div.innerHTML = "<div id='template'><div id='component'></div></div>"
     
     renderTemplate(div,graph.workflow.modules)
     let context = new Context('module0 execution', {}, undefined)

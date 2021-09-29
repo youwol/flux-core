@@ -1,9 +1,11 @@
 
 
 import { ModuleTest} from './test-modules'
-import { ModuleConfiguration,GroupModules, Workflow, LayerTree,ModuleView,Connection } from '../index'
-import { SlotRef } from '../lib/models/models-base'
+import { ModuleConfiguration,GroupModules, Workflow, LayerTree,ModuleView,Connection, MockEnvironment } from '../index'
+import { Factory, SlotRef } from '../lib/models/models-base'
 console.log = () =>{}
+
+let environment = new MockEnvironment()
 
 test('empty group module test', () => {
 
@@ -14,10 +16,31 @@ test('empty group module test', () => {
     })
 
     let layerId     = 'testLayerGroup'
-    let groupLayer = new LayerTree('testLayerGroup','test layer',[],[]) 
-    let rootLayer = new LayerTree('root','root layer',[groupLayer],[]) 
-    let workflow  = new Workflow([],  [],  [], rootLayer)
-    let mdle = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', configuration, Factory: GroupModules, environment:{} })
+    
+    let rootLayerTree = new LayerTree({
+        layerId:'root',
+        title:'root layer',
+        children:[
+            new LayerTree({
+                layerId,
+                title:'test layer',
+                children:[],
+                moduleIds:[],
+                html:"",
+                css:""
+        })],
+        moduleIds:[],
+        html:"",
+        css:""
+    }) 
+    
+    let workflow  = new Workflow({
+        modules:[], 
+        connections:[],  
+        plugins:[]
+    })
+    let mdle = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', 
+    configuration, Factory: GroupModules as any, environment:environment })
     console.log(mdle)
    
     expect(mdle.inputSlots).toEqual([])     
@@ -36,10 +59,30 @@ test('group 2 modules, no connection', () => {
     let mdles = [1,2,3,4].map( i => new ModuleTest.Module( { moduleId:"mdle"+i, configuration, Factory:ModuleTest , environment: {} }) )
 
     let layerId     = 'testLayerGroup'
-    let groupLayer = new LayerTree('testLayerGroup','test layer',[],["mdle2","mdle3"]) 
-    let rootLayer = new LayerTree('root','root layer',[groupLayer],["mdle1","mdle4"]) 
-    let workflow  = new Workflow(mdles,  [],  [], rootLayer)
-    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', configuration, Factory: GroupModules, environment:{} })
+    let rootLayerTree = new LayerTree({
+        layerId:'root',
+        title:'root layer',
+        children:[
+            new LayerTree({
+                layerId,
+                title:'test layer',
+                children:[],
+                moduleIds:["mdle2","mdle3"],
+                html:"",
+                css:""
+        })],
+        moduleIds:["mdle1","mdle4"],
+        html:"",
+        css:""
+    }) 
+    let workflow  = new Workflow({
+        modules:mdles, 
+        connections:[],  
+        plugins:[]
+    })
+    
+    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', 
+    configuration, Factory: GroupModules as any, environment })
     console.log(mdleGroup)
    
     expect(mdleGroup.inputSlots).toEqual([])     
@@ -62,12 +105,31 @@ test('group 2 modules, 1 connection in, 1 connection out', () => {
         new Connection(new SlotRef("output","mdle3"), new SlotRef("input","mdle4")),
     ]
     let layerId     = 'testLayerGroup'
-    let groupLayer = new LayerTree('testLayerGroup','test layer',[],["mdle2","mdle3"]) 
-    let rootLayer = new LayerTree('root','root layer',[groupLayer],["mdle1","mdle4"]) 
-    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', configuration, Factory: GroupModules, environment:{} })
+    let rootLayerTree = new LayerTree({
+        layerId:'root',
+        title:'root layer',
+        children:[
+            new LayerTree({
+                layerId,
+                title:'test layer',
+                children:[],
+                moduleIds:["mdle2","mdle3"],
+                html:"",
+                css:""
+        })],
+        moduleIds:["mdle1","mdle4"],
+        html:"",
+        css:""
+    }) 
+    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule',
+     configuration, Factory: GroupModules as any, environment })
     
-
-    workflow  = new Workflow([...mdles,mdleGroup],  connections,  [], rootLayer)
+    workflow = new Workflow({
+        modules:[...mdles,mdleGroup], 
+        connections,  
+        plugins:[]
+    })
+    
     console.log(mdleGroup)
     let slots = mdleGroup.getAllSlots()
     expect(slots.inputs.implicits.length).toEqual(1)      

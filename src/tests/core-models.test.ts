@@ -56,20 +56,32 @@ test('models init', () => {
     expect(d.name).toEqual("name")
     expect(d.description).toEqual("description")
 
-    let layer = new LayerTree("layerId", "title", [], ["module0"])
+    let layer = new LayerTree({layerId:"layerId", title:"title", children:[], moduleIds:["module0"], html:"", css:""})
     expect(layer.layerId).toEqual("layerId")
     expect(layer.title).toEqual("title")
     expect(layer.children).toEqual([])
     expect(layer.moduleIds).toEqual(["module0"])
 
-    let wf = new Workflow([1] as any, [2]as any, [3]as any,layer)
+    let wf = new Workflow({
+        modules:[1] as any,
+        connections:[2] as any, 
+        plugins:[3]as any
+    })
     expect(wf.modules).toEqual([1]as any)
     expect(wf.connections).toEqual([2]as any)
     expect(wf.plugins).toEqual([3]as any)
-    expect(wf.rootLayerTree).toEqual(layer)
 
-    let project = new Project("name","description" , reqs, wf, builderRendering, runnerRendering)
+    let project = new Project({
+        name:"name", 
+        schemaVersion:"0.0", 
+        description:"description", 
+        requirements:reqs, 
+        workflow: wf,
+        builderRendering, 
+        runnerRendering
+    })
     expect(project.name).toEqual("name")
+    expect(project.schemaVersion).toEqual("0.0")
     expect(project.description).toEqual("description")
     expect(project.requirements).toEqual(reqs)
     expect(project.workflow).toEqual(wf)

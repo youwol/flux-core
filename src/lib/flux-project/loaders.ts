@@ -128,28 +128,20 @@ export function createProject(
     )
 
     modulesFactory = new Map(modulesFactory)
-    let rootLayerTree = instantiateProjectLayerTree(project.workflow.rootLayerTree ) 
     let modules = instantiateProjectModules(project.workflow.modules, modulesFactory, environment, workflowGetter) 
     let plugins = instantiateProjectPlugins(project.workflow.plugins, modules, modulesFactory, environment) 
     let connections = instantiateProjectConnections(subscriptionsStore,project.workflow.connections, [...modules, ...plugins])
         
-    let newProject = new Project( 
-        project.name,
-        project.description,
-        project.requirements,
-        new Workflow( modules,connections,plugins,rootLayerTree ),
-        instantiateProjectBuilderRendering(modules, project.builderRendering),
-        project.runnerRendering
-    )
+    let newProject = new Project({
+        ...project, 
+        ...{
+            workflow: new Workflow( {modules,connections,plugins}),
+            builderRendering: instantiateProjectBuilderRendering(modules, project.builderRendering)
+        }
+    })
     return { project: newProject, packages, modulesFactory }
 }
 
-
-export function instantiateProjectLayerTree(data: LayerTreeSchema) : LayerTree{
-
-    return new LayerTree(data.layerId,data.title,data.children.map( c => instantiateProjectLayerTree(c)),
-    data.moduleIds)
-}
 
 
 function isGroupingModule(moduleData: ModuleSchema): boolean{

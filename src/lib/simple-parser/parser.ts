@@ -232,5 +232,5 @@ export function parseGraph ( {branches,modules,plugins,adaptors,observers, withC
         }
     })
     return new Graph(branches.map( branch => parseBranch({branch,modules:all,adaptors :adaptors || {} ,observers:observers || {}})),
-                     Object.values(all), withConnections, layerTree )
+                     Object.values(all), withConnections )
 }

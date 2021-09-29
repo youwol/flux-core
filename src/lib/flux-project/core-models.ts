@@ -1,4 +1,5 @@
 
+import { access } from 'node:fs';
 import { ModuleFlux, PluginFlux, Connection } from '../models/models-base';
 
 /**
@@ -104,12 +105,29 @@ export class Description{
  */
 export class LayerTree {
 
-    constructor( 
-        public readonly layerId : string,  
-        public readonly title : string,  
-        public readonly children: Array<LayerTree>,                 
-        public readonly moduleIds : Array<string>,
-        ){}
+    public readonly layerId : string
+    public readonly title : string 
+    public readonly children: Array<LayerTree>                
+    public readonly moduleIds : Array<string>
+    public readonly html : string = ""
+    public readonly css : string = ""
+
+    constructor( {layerId, title, children, moduleIds, html, css}:
+        {
+            layerId : string,  
+            title : string,  
+            children: Array<LayerTree>, 
+            moduleIds : Array<string>,
+            html : string,
+            css : string
+        }){
+            this.layerId = layerId
+            this.title = title
+            this.children = children
+            this.moduleIds = moduleIds
+            this.html = html
+            this.css
+        }
     
     getLayerRecursive(testFct: (LayerTree)=>boolean) : LayerTree {
 
@@ -117,6 +135,12 @@ export class LayerTree {
             return this
 
         return this.children.map( c => c.getLayerRecursive(testFct)).filter(d=>d)[0]
+    }
+
+    getLayersRecursive(testFct: (LayerTree)=>boolean) : LayerTree[] {
+
+        let children = this.children.map( c => c.getLayersRecursive(testFct)).flat()
+        return testFct(this) ? new Array<LayerTree>(this).concat(children) : children
     }
 
     getChildrenModules() {
@@ -127,6 +151,42 @@ export class LayerTree {
         return this.children.concat(...this.children.map( l => l.getChildrenLayers())) 
     }
   
+    getHTML( {recursive}:{recursive:boolean} = {recursive:false}) {
+
+        let toHtml = (content: string) => {
+            var template = document.createElement('template');
+            template.innerHTML = (content as any).trim();
+            return template.content.firstChild as HTMLDivElement
+        }
+        if(!recursive)
+            return toHtml(this.html)
+        
+        let layersComponents = this.getLayersRecursive( layer => layer.html != "" && layer.layerId != this.layerId)
+        .reduce((acc,e) => ({...acc,...{["Component_"+e.layerId]:toHtml(e.html as any)}})
+                ,{})
+        let root = toHtml(this.html as any)
+        if(!root)
+            return root
+        while(Object.entries(layersComponents).length > 0 ){
+            let previousLength = Object.entries(layersComponents).length
+            Array.from(root.querySelectorAll('.flux-component'))
+            .filter( (item) => layersComponents[item.id] != undefined)
+            .forEach( (htmlDiv) =>{
+                htmlDiv.replaceWith(layersComponents[htmlDiv.id])
+                delete layersComponents[htmlDiv.id]
+            })
+            if(Object.entries(layersComponents).length == previousLength)
+                break
+        }
+        return root
+    }
+
+
+    getCSS({recursive}:{recursive:boolean} = {recursive:false}) : string {
+        if(!recursive)
+            return this.css
+        return this.getLayersRecursive(()=>true).reduce( (acc,e) => acc+"\n"+e.css , "")
+    }
 }
 
 /**
@@ -134,11 +194,19 @@ export class LayerTree {
  */
 export class Workflow {
 
-    constructor( public readonly modules : Array<ModuleFlux>,  
-                 public readonly connections : Array<Connection> ,                 
-                 public readonly plugins : Array<PluginFlux<any>>,
-                 public readonly rootLayerTree :LayerTree
-                 ){}
+    public readonly modules : Array<ModuleFlux>
+    public readonly connections : Array<Connection>                  
+    public readonly plugins : Array<PluginFlux<any>>
+
+    constructor( {modules, connections, plugins}: {
+        modules : Array<ModuleFlux>,  
+        connections : Array<Connection>,
+        plugins : Array<PluginFlux<any>>,
+    }){
+        this.modules = modules
+        this.connections = connections
+        this.plugins = plugins
+    }
 } 
 
 /**
@@ -146,12 +214,30 @@ export class Workflow {
  */
 export class Project{
 
-    constructor( public readonly name: string,
-                 public readonly description: string,
-                 public readonly requirements: Requirements, 
-                 public readonly workflow: Workflow,
-                 public readonly builderRendering: BuilderRendering,
-                 public readonly runnerRendering: RunnerRendering ){
+    public readonly name: string
+    public readonly schemaVersion: string
+    public readonly description: string
+    public readonly requirements: Requirements 
+    public readonly workflow: Workflow
+    public readonly builderRendering: BuilderRendering
+    public readonly runnerRendering: RunnerRendering
+
+    constructor( {name, schemaVersion,description, requirements, workflow, builderRendering, runnerRendering} : { 
+        name: string,
+        schemaVersion: string,
+        description: string,
+        requirements: Requirements,
+        workflow: Workflow,
+        builderRendering: BuilderRendering, 
+        runnerRendering: RunnerRendering
+    }){
+        this.name = name
+        this.schemaVersion = schemaVersion
+        this.description = description
+        this.requirements = requirements
+        this.workflow = workflow
+        this.builderRendering = builderRendering
+        this.runnerRendering = runnerRendering
     }
 }
 
