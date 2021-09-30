@@ -1,7 +1,8 @@
 import { LayerTree, Workflow } from '../flux-project/core-models';
 import { ModuleFlux, Connection, SlotRef, Pipe,  
     instanceOfSideEffects, Factory, 
-    ModuleConfiguration} from '../models/models-base';
+    ModuleConfiguration,
+    WorkflowDependantTrait} from '../models/models-base';
 import {Cache} from '../models/cache'
 import { Schemas } from './schemas'
 import { Flux, BuilderView, Schema } from '../models/decorators'
@@ -11,6 +12,7 @@ import { createPlug, createPlugCircle, genericModulePlotData } from '../models/d
 import { IEnvironment, StaticStorage } from '../../index';
 import { freeContract } from '../models/contract';
 import { Context } from '../models/context';
+import { Observable } from 'rxjs';
 
 
 export namespace GroupModules {
@@ -73,6 +75,7 @@ export namespace GroupModules {
         }
     }
 
+    
     @Flux({
         pack: packCore,
         namespace: GroupModules,
@@ -85,9 +88,9 @@ export namespace GroupModules {
         render: (mdle, icon) => groupModulePlot({ module: mdle, icon: icon, width: 150, vMargin: 50, vStep: 25 }),
         icon: svgIcon
     })
-    export class Module extends ModuleFlux{
+    export class Module extends ModuleFlux implements WorkflowDependantTrait{
 
-        public readonly workflowGetter: (instance: Module) => Workflow
+        public readonly workflow$: Observable<Workflow>
 
         public readonly internalEntries = new Array<Pipe<any>>()
         public readonly explicitOutputs = new Array<Pipe<any>>()
@@ -96,21 +99,23 @@ export namespace GroupModules {
 
         public readonly staticStorage: StaticStorage
 
-        constructor({staticStorage, workflowGetter, moduleId, configuration, Factory, cache, environment, helpers} : {
+        public workflow: Workflow
+
+        constructor({ staticStorage, moduleId, configuration, Factory, cache, environment, helpers,
+            userData
+        } : {
             staticStorage?: StaticStorage, 
-            layerId: string, 
-            workflowGetter:(instance: Module) => Workflow, 
             moduleId?: string, 
             configuration: ModuleConfiguration, 
             environment: IEnvironment;
             Factory: Factory, 
             cache?: Cache, 
-            helpers?: {[key:string]: any}
+            helpers?: {[key:string]: any},
+            userData?: {[key:string]: any}, 
         }) {
-            super({moduleId, configuration, Factory, cache, environment, helpers})
+            super({moduleId, configuration, Factory, cache, environment, helpers, userData})
 
             this.staticStorage = staticStorage
-            this.workflowGetter = workflowGetter
             let staticConf = this.getPersistentData<PersistentData>()
 
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
@@ -157,66 +162,74 @@ export namespace GroupModules {
             }
         }
 
+        checkWorkflow(){
+            if(!this.workflow)
+                throw Error("Workflow has not been defined")
+        }
+
+        applyWorkflowDependantTrait(workflow: Workflow){
+
+            this.workflow = workflow
+            workflow.modules
+            .filter( mdle => mdle instanceof GroupModules.Module)
+            .forEach( (mdle:GroupModules.Module) => mdle.workflow = workflow )
+        }
+
+
         applyChildrenSideEffects(){
+
             this.getAllChildren().forEach( mdle => {
                 instanceOfSideEffects(mdle) && mdle.apply() 
             })
         }
 
         disposeChildrenSideEffects(){
+
             this.getAllChildren().forEach( mdle => {
                 instanceOfSideEffects(mdle) && mdle.dispose() 
             })
         }
-        
-        getWorkflow(): Workflow {
-            return this.workflowGetter(this)
-        }
 
         getAllChildren(): Array<ModuleFlux> {
-
+            
             let getChildrenRec = (mdle: Module) : ModuleFlux[] => {
                 let directs = mdle.getDirectChildren()
                 let indirects = directs.filter( mdle => mdle instanceof Module).map((mdle: Module)=>getChildrenRec(mdle)).flat()
                 return directs.concat(...indirects)
             }
-            let workflow = this.workflowGetter(this)
             let modules = getChildrenRec(this)
-            let plugins = workflow.plugins.filter(plugin => {
-                return plugin.parentModule && modules.map( mdle => mdle.moduleId).includes(plugin.parentModule.moduleId) // (plugin instanceof PluginFlux) better => but need only one flux-lib-core loaded
-            })            
-            return [...modules, ...plugins]
+            return modules
         }
 
         getDirectChildren(): Array<ModuleFlux> {
 
-            let workflow = this.workflowGetter(this)
+            this.checkWorkflow()
             let modulesId = this.getPersistentData<PersistentData>().getModuleIds()
-            let plugins = workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
-            let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
+            let plugins = this.workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
+            let modules = modulesId.map(mid => this.workflow.modules.find(mdle => mdle.moduleId == mid))
+            
             return [...modules, ...plugins]
         }
 
         getModuleIds() : Array<string> {
+
             return this.getPersistentData<PersistentData>().getModuleIds()
         }
 
         getConnections() {
 
-            let workflow = this.workflowGetter(this)
             let allModulesId = this.getAllChildren().map(mdle => mdle.moduleId)
-            return getGroupConnections(this.moduleId, workflow.connections, allModulesId)
+            return getGroupConnections(this.moduleId, this.workflow.connections, allModulesId)
         }
 
         getAllSlots(): {
             inputs: { implicits: Array<SlotRef>, explicits: Array<SlotRef> },
             outputs: { implicits: Array<SlotRef>, explicits: Array<SlotRef> }
         } {
-            let workflow = this.workflowGetter(this)
-
+            this.checkWorkflow()
             let allModulesId = this.getAllChildren().map(mdle => mdle.moduleId)
 
-            let groupConnections = getGroupConnections(this.moduleId, workflow.connections, allModulesId)
+            let groupConnections = getGroupConnections(this.moduleId, this.workflow.connections, allModulesId)
             let implicitInputs = new Set(groupConnections.implicits.inputs.map(connection => connection.end))
             let implicitOutputs = new Set(groupConnections.implicits.outputs.map(connection => connection.start))
 

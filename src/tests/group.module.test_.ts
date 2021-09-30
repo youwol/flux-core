@@ -39,10 +39,10 @@ test('empty group module test', () => {
         connections:[],  
         plugins:[]
     })
-    let mdle = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', 
+    let mdle = new GroupModules.Module( { moduleId:'groupModule', 
     configuration, Factory: GroupModules as any, environment:environment })
     console.log(mdle)
-   
+    
     expect(mdle.inputSlots).toEqual([])     
     expect(mdle.outputSlots).toEqual([])   
 })
@@ -81,8 +81,11 @@ test('group 2 modules, no connection', () => {
         plugins:[]
     })
     
-    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule', 
+    let mdleGroup = new GroupModules.Module( { moduleId:'groupModule', 
     configuration, Factory: GroupModules as any, environment })
+
+    workflow.setup()
+    
     console.log(mdleGroup)
    
     expect(mdleGroup.inputSlots).toEqual([])     
@@ -121,7 +124,7 @@ test('group 2 modules, 1 connection in, 1 connection out', () => {
         html:"",
         css:""
     }) 
-    let mdleGroup = new GroupModules.Module( { layerId,workflowGetter:(_)=>workflow, moduleId:'groupModule',
+    let mdleGroup = new GroupModules.Module( { moduleId:'groupModule',
      configuration, Factory: GroupModules as any, environment })
     
     workflow = new Workflow({
@@ -129,7 +132,8 @@ test('group 2 modules, 1 connection in, 1 connection out', () => {
         connections,  
         plugins:[]
     })
-    
+    workflow.setup()
+
     console.log(mdleGroup)
     let slots = mdleGroup.getAllSlots()
     expect(slots.inputs.implicits.length).toEqual(1)      

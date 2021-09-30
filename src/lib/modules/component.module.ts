@@ -142,10 +142,11 @@ export namespace Component {
     
 
     export function renderHtmlElement(mdle:Module){
-
-        let div = mdle.getHTML({recursive: false})
+        
+        let templateDiv = mdle.getHTML({recursive:false})
+        let div = renderTemplate(templateDiv, mdle.getAllChildren())
         // The outer element of div is the 'wrapper div' itself => we do not want to include it as 
         // child of the wrapper div encountered when parsing
-        return Array.from<HTMLElement>(renderTemplate(div, mdle.getAllChildren()).children as any)
+        return Array.from<HTMLElement>(div.children as any)
     }
 }
