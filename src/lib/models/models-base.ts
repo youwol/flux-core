@@ -378,6 +378,7 @@ import {Cache} from './cache'
 import { Environment, IEnvironment } from '../environment';
 import { Context, ErrorLog, Journal, Log, LogChannel } from './context';
 import { InconsistentConfiguration, mergeConfiguration } from './configuration-validation';
+import { Workflow } from '../flux-project/core-models';
 
 
 export function uuidv4() {
@@ -988,6 +989,11 @@ export abstract class ModuleFlux {
     public readonly moduleId: string
 
     /**
+     * module uuid
+     */
+    public readonly uuid: string = uuidv4()
+
+    /**
      * Environment, used to:
      * -    fetch resources
      * -    send messages
@@ -1052,6 +1058,11 @@ export abstract class ModuleFlux {
      */
     public journals: Array<Journal> = []
     
+    /*
+    An object that can be used to store custom data about the module.  
+    */
+    public userData: {[key:string]: unknown} = {}
+
     /**
      * @param moduleId see [[moduleId]]
      * @param Factory see [[Factory]]
@@ -1061,10 +1072,10 @@ export abstract class ModuleFlux {
      * @param cache usually not provided (a new cache is created). In case it is needed to reuse a 
      * cache (e.g. of a previous instance of the module) this argument can be provided.
      */
-    constructor({ moduleId, configuration, Factory, cache, environment, helpers }:
+    constructor({ moduleId, configuration, Factory, cache, environment, helpers, userData }:
         {
             moduleId?: string, configuration: ModuleConfiguration, environment: IEnvironment;
-            Factory: Factory, cache?: Cache, helpers?: {[key:string]: any}
+            Factory: Factory, cache?: Cache, helpers?: {[key:string]: any}, userData?:{[key:string]: unknown}
         }
     ) {
         this.environment = environment
@@ -1073,6 +1084,8 @@ export abstract class ModuleFlux {
         this.Factory = Factory
         this.helpers = helpers ? helpers : {}
         this.cache = cache ? cache : new Cache()
+        this.userData = userData ? userData : {}
+
         this.logChannels = [ 
             new LogChannel<Log>({
                 filter: (log) => log instanceof Log,
