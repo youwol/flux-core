@@ -1643,6 +1643,20 @@ export class PluginFlux<T extends ModuleFlux> extends ModuleFlux {
 }
 
 /**
+ * ## WorkflowDependantTrait
+ * 
+ * Interface for modules that required information on the global workflow. 
+ */
+export interface WorkflowDependantTrait{
+
+    applyWorkflowDependantTrait(workflow: Workflow)
+}
+export function implementsWorkflowDependantTrait(mdle: unknown): mdle is WorkflowDependantTrait {
+    return (mdle as WorkflowDependantTrait).applyWorkflowDependantTrait !== undefined;
+}
+
+
+/**
  * ## SideEffects
  * 
  * Interface for a side effect trait. 

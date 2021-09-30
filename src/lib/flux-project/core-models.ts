@@ -1,6 +1,5 @@
 
-import { access } from 'node:fs';
-import { ModuleFlux, PluginFlux, Connection } from '../models/models-base';
+import { ModuleFlux, PluginFlux, Connection, implementsWorkflowDependantTrait } from '../models/models-base';
 
 /**
  * @category models
@@ -206,6 +205,14 @@ export class Workflow {
         this.modules = modules
         this.connections = connections
         this.plugins = plugins
+    }
+
+    setup(){
+        [...this.modules, ...this.plugins].map( (mdle:ModuleFlux) => {
+            if(implementsWorkflowDependantTrait(mdle)){
+                mdle.applyWorkflowDependantTrait(this)
+            }
+        })
     }
 } 
 
