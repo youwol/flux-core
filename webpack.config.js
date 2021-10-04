@@ -32,6 +32,7 @@ module.exports = {
             root:['rxjs','operators']
         },
         '@youwol/cdn-client': '@youwol/cdn-client',
+        '@youwol/flux-view': '@youwol/flux-view',
         "lodash": {
             commonjs: "lodash",
             commonjs2: "lodash",
