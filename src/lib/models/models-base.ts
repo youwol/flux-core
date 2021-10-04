@@ -1662,10 +1662,10 @@ export class PluginFlux<T extends ModuleFlux> extends ModuleFlux {
  */
 export interface WorkflowDependantTrait{
 
-    applyWorkflowDependantTrait(workflow: Workflow)
+    workflow$:  Observable<Workflow>
 }
 export function implementsWorkflowDependantTrait(mdle: unknown): mdle is WorkflowDependantTrait {
-    return (mdle as WorkflowDependantTrait).applyWorkflowDependantTrait !== undefined;
+    return (mdle as WorkflowDependantTrait).workflow$ !== undefined;
 }
 
 

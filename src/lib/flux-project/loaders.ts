@@ -1,8 +1,8 @@
-import { from, Observable, of, Subscription } from "rxjs"
+import { from, Observable, of, Subject, Subscription } from "rxjs"
 import { map, mapTo, mergeMap, reduce, tap } from "rxjs/operators"
 import { BuilderRendering, DescriptionBox, ModuleView, Project, LayerTree, Workflow } from "./core-models"
 import { packCore } from "../modules/factory-pack-core"
-import { Adaptor, Connection, Factory, FluxPack, ModuleFlux, PluginFlux } from "../models/models-base"
+import { Adaptor, Connection, Factory, FluxPack, implementsWorkflowDependantTrait, ModuleFlux, PluginFlux } from "../models/models-base"
 import { IEnvironment } from "../environment"
 import { BuilderRenderingSchema, ConnectionSchema, LayerTreeSchema, ModuleSchema, PluginSchema, ProjectSchema } from "./client-schemas"
 import { CdnEvent } from "@youwol/cdn-client"
@@ -61,7 +61,7 @@ export function loadProjectDependencies$(
 
 export function loadProject$(
     project$: Observable<ProjectSchema>, 
-    workflowGetter : ()=>Workflow, 
+    workflow$ : Subject<Workflow>, 
     subscriptionsStore: Map<Connection, any>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
@@ -71,7 +71,7 @@ export function loadProject$(
             return loadProjectDependencies$(project, environment) 
         }),
         map(({ project, packages }) => {
-            return createProject(project, packages, workflowGetter, subscriptionsStore, environment)
+            return createProject(project, packages, workflow$, subscriptionsStore, environment)
         })
     )
     return projectData$
@@ -80,31 +80,31 @@ export function loadProject$(
 
 export function loadProjectDatabase$(
     projectId: string, 
-    workflowGetter : ()=>Workflow, 
+    workflow$ : Subject<Workflow>, 
     subscriptionsStore: Map<Connection,Subscription>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}>{
 
-    return loadProject$(environment.getProject(projectId), workflowGetter, subscriptionsStore, environment)
+    return loadProject$(environment.getProject(projectId), workflow$, subscriptionsStore, environment)
 }
 
 
 export function loadProjectURI$(
     projectURI: string, 
-    workflowGetter : ()=>Workflow, 
+    workflow$ : Subject<Workflow>, 
     subscriptionsStore:  Map<Connection,Subscription>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
 
     let project = JSON.parse(decodeURIComponent(projectURI)) as ProjectSchema
-    return loadProject$( of(project), workflowGetter, subscriptionsStore, environment)
+    return loadProject$( of(project), workflow$, subscriptionsStore, environment)
 }
 
 
 export function createProject( 
     project: ProjectSchema , 
     packs,
-    workflowGetter : ()=>Workflow, 
+    workflow$ : Subject<Workflow>, 
     subscriptionsStore: Map<Connection,Subscription>, 
     environment: IEnvironment
     ): {project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}{
@@ -128,7 +128,7 @@ export function createProject(
     )
 
     modulesFactory = new Map(modulesFactory)
-    let modules = instantiateProjectModules(project.workflow.modules, modulesFactory, environment, workflowGetter) 
+    let modules = instantiateProjectModules(project.workflow.modules, modulesFactory, environment, workflow$) 
     let plugins = instantiateProjectPlugins(project.workflow.plugins, modules, modulesFactory, environment) 
     let connections = instantiateProjectConnections(subscriptionsStore,project.workflow.connections, [...modules, ...plugins])
         
@@ -139,6 +139,7 @@ export function createProject(
             builderRendering: instantiateProjectBuilderRendering(modules, project.builderRendering)
         }
     })
+    workflow$.next(newProject.workflow)
     return { project: newProject, packages, modulesFactory }
 }
 
@@ -153,7 +154,7 @@ export function instantiateProjectModules(
     modulesData: Array< ModuleSchema>, 
     modulesFactory: Map<string, Factory>, 
     environment: IEnvironment, 
-    workflowGetter: () => Workflow
+    workflow$: Observable<Workflow>
     ): Array<ModuleFlux>{
 
    let modules = modulesData
@@ -167,18 +168,13 @@ export function instantiateProjectModules(
            description: moduleData.configuration.description,
            data: new Factory.PersistentData(moduleData.configuration.data)
         })
-       let groupData = isGroupingModule(moduleData) 
-            ? {  workflowGetter,  layerId:moduleData.moduleId.split(Factory.id+"_")[1]  }
-            : {}
-       let data = Object.assign({},
-        {
+       let data = {
            moduleId: moduleData.moduleId, 
            configuration, 
            Factory,
-           workflowGetter, // only relevant for Groups
-           environment
-        }, groupData
-        )
+           environment,
+           workflow$
+        }
        
        let mdle  = new Factory.Module(data)                         
        return mdle 

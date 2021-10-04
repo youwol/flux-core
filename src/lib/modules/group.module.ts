@@ -13,6 +13,7 @@ import { IEnvironment, StaticStorage } from '../../index';
 import { freeContract } from '../models/contract';
 import { Context } from '../models/context';
 import { Observable } from 'rxjs';
+import { map, take, tap } from 'rxjs/operators';
 
 
 export namespace GroupModules {
@@ -33,8 +34,29 @@ export namespace GroupModules {
     export let uid = "group@flux-pack-core"
     export let displayName = "Group"
 
+    export interface GroupConnections{
+        internals: Connection[], 
+        implicits: { inputs: Connection[], outputs: Connection[] },
+        explicits: { inputs: Connection[], outputs: Connection[] }
+    }
 
-    function getGroupConnections(moduleId: string, connections: Array<Connection>, allChildrenIds: Array<string>) {
+    export interface GroupSlots{
+
+        inputs: { 
+            implicits: Array<SlotRef>, 
+            explicits: Array<SlotRef> 
+        },
+
+        outputs: { 
+            implicits: Array<SlotRef>, 
+            explicits: Array<SlotRef> 
+        }
+    }
+
+    function getGroupConnections(
+        moduleId: string, 
+        connections: Array<Connection>, 
+        allChildrenIds: Array<string>) : GroupConnections {
 
         let implicitInputConnections = connections.filter((c: Connection) =>
             allChildrenIds.includes(c.end.moduleId) &&
@@ -99,11 +121,16 @@ export namespace GroupModules {
 
         public readonly staticStorage: StaticStorage
 
-        public workflow: Workflow
+        /**
+         * Store the first workflow observed.
+         * It should be deleted, used in groupModulePlot function
+         */
+        public _workflow : Workflow
 
-        constructor({ staticStorage, moduleId, configuration, Factory, cache, environment, helpers,
+        constructor({ workflow$, staticStorage, moduleId, configuration, Factory, cache, environment, helpers,
             userData
         } : {
+            workflow$: Observable<Workflow>,
             staticStorage?: StaticStorage, 
             moduleId?: string, 
             configuration: ModuleConfiguration, 
@@ -115,8 +142,14 @@ export namespace GroupModules {
         }) {
             super({moduleId, configuration, Factory, cache, environment, helpers, userData})
 
+            this.workflow$ = workflow$
             this.staticStorage = staticStorage
             let staticConf = this.getPersistentData<PersistentData>()
+
+            this.workflow$.pipe(
+                take(1),
+                tap( workflow => this._workflow = workflow )
+            ).subscribe()
 
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
 
@@ -162,38 +195,31 @@ export namespace GroupModules {
             }
         }
 
-        checkWorkflow(){
-            if(!this.workflow)
-                throw Error("Workflow has not been defined")
-        }
+        applyChildrenSideEffects(workflow: Workflow){
 
-        applyWorkflowDependantTrait(workflow: Workflow){
-
-            this.workflow = workflow
-            workflow.modules
-            .filter( mdle => mdle instanceof GroupModules.Module)
-            .forEach( (mdle:GroupModules.Module) => mdle.workflow = workflow )
-        }
-
-
-        applyChildrenSideEffects(){
-
-            this.getAllChildren().forEach( mdle => {
+            this.getAllChildren(workflow).forEach( mdle => {
                 instanceOfSideEffects(mdle) && mdle.apply() 
             })
         }
 
-        disposeChildrenSideEffects(){
+        disposeChildrenSideEffects(workflow: Workflow){
 
-            this.getAllChildren().forEach( mdle => {
+            this.getAllChildren(workflow).forEach( mdle => {
                 instanceOfSideEffects(mdle) && mdle.dispose() 
             })
         }
 
-        getAllChildren(): Array<ModuleFlux> {
+        mapTo<Type>( fct : (Workflow) => Type ) : Observable<Type> {
+
+            return this.workflow$.pipe(
+                map( workflow => fct(workflow))
+            )
+        } 
+
+        getAllChildren(workflow: Workflow): ModuleFlux[] {
             
             let getChildrenRec = (mdle: Module) : ModuleFlux[] => {
-                let directs = mdle.getDirectChildren()
+                let directs = mdle.getDirectChildren(workflow)
                 let indirects = directs.filter( mdle => mdle instanceof Module).map((mdle: Module)=>getChildrenRec(mdle)).flat()
                 return directs.concat(...indirects)
             }
@@ -201,14 +227,23 @@ export namespace GroupModules {
             return modules
         }
 
-        getDirectChildren(): Array<ModuleFlux> {
+        getAllChildren$(): Observable<ModuleFlux[]> {
+            
+            return this.mapTo( wf => this.getAllChildren(wf))
+        }
 
-            this.checkWorkflow()
+        getDirectChildren(workflow: Workflow): Array<ModuleFlux> {
+
             let modulesId = this.getPersistentData<PersistentData>().getModuleIds()
-            let plugins = this.workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
-            let modules = modulesId.map(mid => this.workflow.modules.find(mdle => mdle.moduleId == mid))
+            let plugins = workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
+            let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
             
             return [...modules, ...plugins]
+        }
+
+        getDirectChildren$(): Observable<Array<ModuleFlux>> {
+
+            return this.mapTo( wf => this.getDirectChildren(wf))
         }
 
         getModuleIds() : Array<string> {
@@ -216,20 +251,20 @@ export namespace GroupModules {
             return this.getPersistentData<PersistentData>().getModuleIds()
         }
 
-        getConnections() {
+        getConnections( workflow: Workflow): GroupConnections {
 
-            let allModulesId = this.getAllChildren().map(mdle => mdle.moduleId)
-            return getGroupConnections(this.moduleId, this.workflow.connections, allModulesId)
+            let allModulesId = this.getAllChildren(workflow).map(mdle => mdle.moduleId)
+            return getGroupConnections(this.moduleId, workflow.connections, allModulesId)
         }
 
-        getAllSlots(): {
-            inputs: { implicits: Array<SlotRef>, explicits: Array<SlotRef> },
-            outputs: { implicits: Array<SlotRef>, explicits: Array<SlotRef> }
-        } {
-            this.checkWorkflow()
-            let allModulesId = this.getAllChildren().map(mdle => mdle.moduleId)
+        getConnections$(): Observable<GroupConnections> {
 
-            let groupConnections = getGroupConnections(this.moduleId, this.workflow.connections, allModulesId)
+            return this.mapTo( wf => this.getConnections(wf))
+        }
+
+        getAllSlots(workflow: Workflow): GroupSlots {
+
+            let groupConnections = this.getConnections(workflow)
             let implicitInputs = new Set(groupConnections.implicits.inputs.map(connection => connection.end))
             let implicitOutputs = new Set(groupConnections.implicits.outputs.map(connection => connection.start))
 
@@ -237,16 +272,33 @@ export namespace GroupModules {
                 inputs: { implicits: [...implicitInputs], explicits: this.getExplicitInputs() },
                 outputs: { implicits: [...implicitOutputs], explicits: this.getExplicitOutputs() }
             }
+            
         }
 
-        getAllInputSlots(): Array<SlotRef> {
-            let all = this.getAllSlots()
+        getAllSlots$(): Observable<GroupSlots> {
+
+            return this.mapTo( wf => this.getAllSlots(wf))
+        }
+
+        getAllInputSlots(workflow: Workflow): Array<SlotRef> {
+            let all = this.getAllSlots(workflow)
             return [...all.inputs.explicits, ...all.inputs.implicits]
         }
 
-        getAllOutputSlots(): Array<SlotRef> {
-            let all = this.getAllSlots()
+        getAllOutputSlots(workflow: Workflow): Array<SlotRef> {
+
+            let all = this.getAllSlots(workflow)
             return [...all.outputs.explicits, ...all.outputs.implicits]
+        }
+
+        getAllInputSlots$(): Observable<Array<SlotRef>> {
+
+            return this.mapTo( wf => this.getAllInputSlots(wf))
+        }
+
+        getAllOutputSlots$(): Observable<Array<SlotRef>> {
+
+            return this.mapTo( wf => this.getAllOutputSlots(wf))
         }
 
         getExplicitInputs(): Array<SlotRef> {
@@ -287,8 +339,8 @@ export namespace GroupModules {
             width,
             vMargin: 50,
             vStep: 25,
-            inputs: module.getAllInputSlots(),
-            outputs: module.getAllOutputSlots(),
+            inputs: module.getAllInputSlots(module._workflow),
+            outputs: module.getAllOutputSlots(module._workflow),
             actions: {
                 expand: {
                     tag: 'g', style: { transform: `scale(0.083)` },
@@ -298,7 +350,7 @@ export namespace GroupModules {
                             attributes: { d: "M448 344v112a23.94 23.94 0 0 1-24 24H312c-21.39 0-32.09-25.9-17-41l36.2-36.2L224 295.6 116.77 402.9 153 439c15.09 15.1 4.39 41-17 41H24a23.94 23.94 0 0 1-24-24V344c0-21.4 25.89-32.1 41-17l36.19 36.2L184.46 256 77.18 148.7 41 185c-15.1 15.1-41 4.4-41-17V56a23.94 23.94 0 0 1 24-24h112c21.39 0 32.09 25.9 17 41l-36.2 36.2L224 216.4l107.23-107.3L295 73c-15.09-15.1-4.39-41 17-41h112a23.94 23.94 0 0 1 24 24v112c0 21.4-25.89 32.1-41 17l-36.19-36.2L263.54 256l107.28 107.3L407 327.1c15.1-15.2 41-4.5 41 16.9z" }
                         }
                     ],
-                    onclick: (d) => module.Factory.BuilderView.notifier$.next({ type: 'layerFocused', data: module.moduleId })
+                    onclick: (d) => module.Factory.BuilderView.notifier$.next({ type: 'groupFocused', data: module.moduleId })
                 }
             }
         })

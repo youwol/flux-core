@@ -206,14 +206,6 @@ export class Workflow {
         this.connections = connections
         this.plugins = plugins
     }
-
-    setup(){
-        [...this.modules, ...this.plugins].map( (mdle:ModuleFlux) => {
-            if(implementsWorkflowDependantTrait(mdle)){
-                mdle.applyWorkflowDependantTrait(this)
-            }
-        })
-    }
 } 
 
 /**

@@ -1,9 +1,9 @@
-import { Subscription } from "rxjs"
+import { Subject, Subscription } from "rxjs"
 import { MockEnvironment } from "../lib/environment"
 import { Connection } from "../lib/models/models-base"
 import { mockProjectsDB } from "./data/projects-data"
 import { loadProjectDatabase$ } from "../lib/flux-project/loaders"
-import { Project } from "../lib/flux-project/core-models"
+import { Project, Workflow } from "../lib/flux-project/core-models"
 
 import '../lib/modules/group.module'
 import { testPack } from "../lib/modules/test-modules"
@@ -18,7 +18,8 @@ let environment = new MockEnvironment({
 test('load empty project', (done) => {
 
     let subscriptionsStore = new  Map<Connection,Subscription>()
-    let project$ = loadProjectDatabase$('emptyProject', () => undefined,subscriptionsStore,environment)
+    let workflow$ = new Subject<Workflow>()
+    let project$ = loadProjectDatabase$('emptyProject', workflow$ ,subscriptionsStore,environment)
 
     project$.subscribe( ({project, packages, modulesFactory}:{project:Project, packages, modulesFactory}) => {
         expect(project.name).toEqual("emptyProject")
@@ -40,7 +41,8 @@ test('load empty project', (done) => {
 test('load simple project', (done) => {
 
     let subscriptionsStore = new  Map<Connection,Subscription>()
-    let project$ = loadProjectDatabase$('simpleProject', () => undefined,subscriptionsStore,environment)
+    let workflow$ = new Subject<Workflow>()
+    let project$ = loadProjectDatabase$('simpleProject', workflow$,subscriptionsStore,environment)
 
     project$.subscribe( ({project, packages, modulesFactory}:{project:Project, packages, modulesFactory}) => {
         expect(project.name).toEqual("simpleProject")

@@ -3,6 +3,8 @@
 import { ModuleTest} from './test-modules'
 import { ModuleConfiguration,GroupModules, Workflow, LayerTree,ModuleView,Connection, MockEnvironment } from '../index'
 import { Factory, SlotRef } from '../lib/models/models-base'
+import { Subject } from 'rxjs'
+import { take } from 'rxjs/operators'
 console.log = () =>{}
 
 let environment = new MockEnvironment()
@@ -34,13 +36,8 @@ test('empty group module test', () => {
         css:""
     }) 
     
-    let workflow  = new Workflow({
-        modules:[], 
-        connections:[],  
-        plugins:[]
-    })
     let mdle = new GroupModules.Module( { moduleId:'groupModule', 
-    configuration, Factory: GroupModules as any, environment:environment })
+    configuration, Factory: GroupModules as any, environment:environment, workflow$: new Subject<Workflow>() })
     console.log(mdle)
     
     expect(mdle.inputSlots).toEqual([])     
@@ -81,10 +78,12 @@ test('group 2 modules, no connection', () => {
         plugins:[]
     })
     
-    let mdleGroup = new GroupModules.Module( { moduleId:'groupModule', 
-    configuration, Factory: GroupModules as any, environment })
+    let workflow$ = new Subject<Workflow>()
 
-    workflow.setup()
+    let mdleGroup = new GroupModules.Module( { moduleId:'groupModule', 
+    configuration, Factory: GroupModules as any, workflow$, environment })
+
+    workflow$.next(workflow)
     
     console.log(mdleGroup)
    
@@ -124,31 +123,39 @@ test('group 2 modules, 1 connection in, 1 connection out', () => {
         html:"",
         css:""
     }) 
+
+    let workflow$ = new Subject<Workflow>()
+
+
     let mdleGroup = new GroupModules.Module( { moduleId:'groupModule',
-     configuration, Factory: GroupModules as any, environment })
+     configuration, Factory: GroupModules as any, environment, workflow$ })
     
     workflow = new Workflow({
         modules:[...mdles,mdleGroup], 
         connections,  
         plugins:[]
     })
-    workflow.setup()
+    
+    workflow$.next(workflow)
 
     console.log(mdleGroup)
-    let slots = mdleGroup.getAllSlots()
-    expect(slots.inputs.implicits.length).toEqual(1)      
-    expect(slots.inputs.implicits[0].moduleId).toEqual("mdle2")    
-    expect(slots.inputs.implicits[0].slotId).toEqual("input")      
-    expect(slots.outputs.implicits.length).toEqual(1)   
-    expect(slots.outputs.implicits[0].moduleId).toEqual("mdle3")    
-    expect(slots.outputs.implicits[0].slotId).toEqual("output")     
+    mdleGroup.getAllSlots$().pipe(
+        take(1)
+    ).subscribe( slots => {
+        expect(slots.inputs.implicits.length).toEqual(1)      
+        expect(slots.inputs.implicits[0].moduleId).toEqual("mdle2")    
+        expect(slots.inputs.implicits[0].slotId).toEqual("input")      
+        expect(slots.outputs.implicits.length).toEqual(1)   
+        expect(slots.outputs.implicits[0].moduleId).toEqual("mdle3")    
+        expect(slots.outputs.implicits[0].slotId).toEqual("output")     
 
-    let renderer = new mdleGroup.Factory.BuilderView()
-    let div = renderer.render(mdleGroup)
-    let inputSlots = div.querySelectorAll(".input.slot")
-    let outputSlots = div.querySelectorAll(".output.slot")
-    expect(inputSlots.length).toEqual(1)      
-    expect(outputSlots.length).toEqual(1)      
+        let renderer = new mdleGroup.Factory.BuilderView()
+        let div = renderer.render(mdleGroup)
+        let inputSlots = div.querySelectorAll(".input.slot")
+        let outputSlots = div.querySelectorAll(".output.slot")
+        expect(inputSlots.length).toEqual(1)      
+        expect(outputSlots.length).toEqual(1)  
+    })    
 
 })
 
