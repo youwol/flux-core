@@ -196,7 +196,7 @@ export namespace GroupModules {
                 filter((workflow) => {
                     return this.hasImpact(workflow)
                 }),
-                shareReplay()
+                shareReplay(1)
             )
         }
 
