@@ -5,13 +5,14 @@ import { Workflow } from "../flux-project/core-models";
 import { GroupModules } from "../modules/group.module";
 import { Component } from "../modules/component.module";
 import { map } from "rxjs/operators";
-import { Observable } from "rxjs";
+import { Observable, ReplaySubject, Subject } from "rxjs";
 
 
 interface WorkflowFork{ 
     rootComponent: GroupModules.Module, 
     workflow: Workflow, 
-    subscriptionsStore: SubscriptionStore
+    subscriptionsStore: SubscriptionStore,
+    workflow$: Subject<Workflow>
 }
 
 export function duplicateResolvedWorkflow({originalWorkflow, rootComponent, indexEntryPoint, name}:{
@@ -21,6 +22,7 @@ export function duplicateResolvedWorkflow({originalWorkflow, rootComponent, inde
     name: string
 }) : WorkflowFork {
 
+    let workflow$ = new ReplaySubject<Workflow>(1)
     let replicaId = (id) => id
     let staticStorage = new StaticStorage(name, rootComponent.staticStorage)
 
@@ -34,6 +36,7 @@ export function duplicateResolvedWorkflow({originalWorkflow, rootComponent, inde
                 ...mdle,
                 moduleId: replicaId(mdle.moduleId), 
                 staticStorage,
+                workflow$,
                 userData: {replicaId: name}
             })
             return replicaMdle
@@ -116,7 +119,13 @@ export function duplicateResolvedWorkflow({originalWorkflow, rootComponent, inde
         ...originalWorkflow.plugins
     ], newConnections, []);
 
-    return {rootComponent: newModules[0] as GroupModules.Module, workflow, subscriptionsStore}
+    workflow$.next(workflow)
+    return {
+        rootComponent: newModules[0] as GroupModules.Module, 
+        workflow, 
+        subscriptionsStore,
+        workflow$
+    }
 }
 
 
