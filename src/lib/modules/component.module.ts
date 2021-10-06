@@ -12,6 +12,36 @@ import { child$, children$, HTMLElement$, render, VirtualDOM } from '@youwol/flu
 
 export namespace Component {
 
+    export let rootComponentId = 'Component_root-component'
+    export function getRootComponentData(params:{
+        html?:string, 
+        css?: string, 
+        moduleIds?:string[],
+        environment?: string,
+        explicitInputsCount?:number,
+        explicitOutputsCount?: number
+        } = {}) {
+
+        let data = Object.assign({
+            moduleIds:[], 
+            html:`<div id='${rootComponentId}' class='flux-element flux-component'></div>`,
+            css:'',
+            environment:'return {}',
+            explicitInputsCount:0,
+            explicitOutputsCount:0
+        },  params
+        )
+        return {
+            moduleId: rootComponentId,
+            factoryId: { module: "Component", pack: "@youwol/flux-core" },
+            configuration: {
+                title: "Root component",
+                description: "This is the root component",
+                data
+            }
+        } 
+    }
+
     export let id           =   "component"
     export let uid          =   "component@flux-pack-core"
     export let displayName  =   "Component"
