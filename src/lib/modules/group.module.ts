@@ -1,9 +1,12 @@
-import { LayerTree, Workflow } from '../flux-project/core-models';
-import { ModuleFlux, Connection, SlotRef, Pipe,  
-    instanceOfSideEffects, Factory, 
+import { LayerTree, Workflow, workflowDelta } from '../flux-project/core-models';
+import {
+    ModuleFlux, Connection, SlotRef, Pipe,
+    instanceOfSideEffects, Factory,
     ModuleConfiguration,
-    WorkflowDependantTrait} from '../models/models-base';
-import {Cache} from '../models/cache'
+    WorkflowDependantTrait,
+    SideEffects
+} from '../models/models-base';
+import { Cache } from '../models/cache'
 import { Schemas } from './schemas'
 import { Flux, BuilderView, Schema } from '../models/decorators'
 import { createHTMLElement } from './reactive-html'
@@ -12,8 +15,8 @@ import { createPlug, createPlugCircle, genericModulePlotData } from '../models/d
 import { IEnvironment, StaticStorage } from '../../index';
 import { freeContract } from '../models/contract';
 import { Context } from '../models/context';
-import { Observable } from 'rxjs';
-import { map, take, tap } from 'rxjs/operators';
+import { Observable, Subscription } from 'rxjs';
+import { filter, map, shareReplay, take, tap } from 'rxjs/operators';
 
 
 export namespace GroupModules {
@@ -34,29 +37,29 @@ export namespace GroupModules {
     export let uid = "group@flux-pack-core"
     export let displayName = "Group"
 
-    export interface GroupConnections{
-        internals: Connection[], 
+    export interface GroupConnections {
+        internals: Connection[],
         implicits: { inputs: Connection[], outputs: Connection[] },
         explicits: { inputs: Connection[], outputs: Connection[] }
     }
 
-    export interface GroupSlots{
+    export interface GroupSlots {
 
-        inputs: { 
-            implicits: Array<SlotRef>, 
-            explicits: Array<SlotRef> 
+        inputs: {
+            implicits: Array<SlotRef>,
+            explicits: Array<SlotRef>
         },
 
-        outputs: { 
-            implicits: Array<SlotRef>, 
-            explicits: Array<SlotRef> 
+        outputs: {
+            implicits: Array<SlotRef>,
+            explicits: Array<SlotRef>
         }
     }
 
     function getGroupConnections(
-        moduleId: string, 
-        connections: Array<Connection>, 
-        allChildrenIds: Array<string>) : GroupConnections {
+        moduleId: string,
+        connections: Array<Connection>,
+        allChildrenIds: Array<string>): GroupConnections {
 
         let implicitInputConnections = connections.filter((c: Connection) =>
             allChildrenIds.includes(c.end.moduleId) &&
@@ -97,7 +100,7 @@ export namespace GroupModules {
         }
     }
 
-    
+
     @Flux({
         pack: packCore,
         namespace: GroupModules,
@@ -130,18 +133,18 @@ export namespace GroupModules {
 
         constructor({ workflow$, staticStorage, moduleId, configuration, Factory, cache, environment, helpers,
             userData
-        } : {
+        }: {
             workflow$: Observable<Workflow>,
-            staticStorage?: StaticStorage, 
-            moduleId?: string, 
-            configuration: ModuleConfiguration, 
+            staticStorage?: StaticStorage,
+            moduleId?: string,
+            configuration: ModuleConfiguration,
             environment: IEnvironment;
-            Factory: Factory, 
-            cache?: Cache, 
-            helpers?: {[key:string]: any},
-            userData?: {[key:string]: any}, 
+            Factory: Factory,
+            cache?: Cache,
+            helpers?: { [key: string]: any },
+            userData?: { [key: string]: any },
         }) {
-            super({moduleId, configuration, Factory, cache, environment, helpers, userData})
+            super({ moduleId, configuration, Factory, cache, environment, helpers, userData })
 
             this.workflow$ = workflow$
             this.staticStorage = staticStorage
@@ -150,16 +153,16 @@ export namespace GroupModules {
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
 
                 this.internalEntrySlots.push(new SlotRef(`explicitInput${i}_in`, this.moduleId))
-                let internalEntry = this.addOutput({id:`explicitInput${i}_in`})
+                let internalEntry = this.addOutput({ id: `explicitInput${i}_in` })
                 this.internalEntries.push(internalEntry)
                 this.addInput({
 
-                    id: `explicitInput${i}`, 
+                    id: `explicitInput${i}`,
                     description: "explicit input of the module",
-                    contract:freeContract(),
-                    onTriggered: ( 
-                        {data, configuration, context} : {data: unknown, configuration: PersistentData, context: Context}
-                        ) => {
+                    contract: freeContract(),
+                    onTriggered: (
+                        { data, configuration, context }: { data: unknown, configuration: PersistentData, context: Context }
+                    ) => {
                         /*
                         let confEnv = typeof configuration.environment == "string" ?
                             new Function(configuration.environment)() :
@@ -178,13 +181,13 @@ export namespace GroupModules {
             for (let i = 0; i < staticConf.explicitOutputsCount; i++) {
 
                 this.internalExitSlots.push(new SlotRef(`explicitOutput${i}_in`, this.moduleId))
-                let externalOut = this.addOutput({id:`explicitOutput${i}`})
+                let externalOut = this.addOutput({ id: `explicitOutput${i}` })
                 this.explicitOutputs.push(externalOut)
                 this.addInput({
-                    id:`explicitOutput${i}_in`, 
+                    id: `explicitOutput${i}_in`,
                     description: 'input side of an explicit output',
-                    contract:freeContract(),
-                    onTriggered: ({data, context}) => {
+                    contract: freeContract(),
+                    onTriggered: ({ data, context }) => {
                         externalOut.next({ data, context })
                     }
                 })
@@ -197,7 +200,6 @@ export namespace GroupModules {
             )
         }
 
-        applyChildrenSideEffects(workflow: Workflow){
         apply() {
             if (this.subscriptionWorkflow)
                 return
@@ -212,30 +214,32 @@ export namespace GroupModules {
             this.subscriptionWorkflow && this.subscriptionWorkflow.unsubscribe()
         }
 
-            this.getAllChildren(workflow).forEach( mdle => {
-                instanceOfSideEffects(mdle) && mdle.apply() 
+        applyChildrenSideEffects(workflow: Workflow) {
+
+            this.getAllChildren(workflow).forEach(mdle => {
+                instanceOfSideEffects(mdle) && mdle.apply()
             })
         }
 
-        disposeChildrenSideEffects(workflow: Workflow){
+        disposeChildrenSideEffects(workflow: Workflow) {
 
-            this.getAllChildren(workflow).forEach( mdle => {
-                instanceOfSideEffects(mdle) && mdle.dispose() 
+            this.getAllChildren(workflow).forEach(mdle => {
+                instanceOfSideEffects(mdle) && mdle.dispose()
             })
         }
 
-        mapTo<Type>( fct : (Workflow) => Type ) : Observable<Type> {
+        mapTo<Type>(fct: (Workflow) => Type): Observable<Type> {
 
             return this.workflow$.pipe(
-                map( workflow => fct(workflow))
+                map(workflow => fct(workflow))
             )
-        } 
+        }
 
         getAllChildren(workflow: Workflow): ModuleFlux[] {
-            
-            let getChildrenRec = (mdle: Module) : ModuleFlux[] => {
+
+            let getChildrenRec = (mdle: Module): ModuleFlux[] => {
                 let directs = mdle.getDirectChildren(workflow)
-                let indirects = directs.filter( mdle => mdle instanceof Module).map((mdle: Module)=>getChildrenRec(mdle)).flat()
+                let indirects = directs.filter(mdle => mdle instanceof Module).map((mdle: Module) => getChildrenRec(mdle)).flat()
                 return directs.concat(...indirects)
             }
             let modules = getChildrenRec(this)
@@ -243,8 +247,8 @@ export namespace GroupModules {
         }
 
         getAllChildren$(): Observable<ModuleFlux[]> {
-            
-            return this.mapTo( wf => this.getAllChildren(wf))
+
+            return this.mapTo(wf => this.getAllChildren(wf))
         }
 
         getDirectChildren(workflow: Workflow): Array<ModuleFlux> {
@@ -252,21 +256,21 @@ export namespace GroupModules {
             let modulesId = this.getPersistentData<PersistentData>().getModuleIds()
             let plugins = workflow.plugins.filter(plugin => modulesId.includes(plugin.parentModule.moduleId))
             let modules = modulesId.map(mid => workflow.modules.find(mdle => mdle.moduleId == mid))
-            
+
             return [...modules, ...plugins]
         }
 
         getDirectChildren$(): Observable<Array<ModuleFlux>> {
 
-            return this.mapTo( wf => this.getDirectChildren(wf))
+            return this.mapTo(wf => this.getDirectChildren(wf))
         }
 
-        getModuleIds() : Array<string> {
+        getModuleIds(): Array<string> {
 
             return this.getPersistentData<PersistentData>().getModuleIds()
         }
 
-        getConnections( workflow: Workflow): GroupConnections {
+        getConnections(workflow: Workflow): GroupConnections {
 
             let allModulesId = this.getAllChildren(workflow).map(mdle => mdle.moduleId)
             return getGroupConnections(this.moduleId, workflow.connections, allModulesId)
@@ -274,7 +278,7 @@ export namespace GroupModules {
 
         getConnections$(): Observable<GroupConnections> {
 
-            return this.mapTo( wf => this.getConnections(wf))
+            return this.mapTo(wf => this.getConnections(wf))
         }
 
         getAllSlots(workflow: Workflow): GroupSlots {
@@ -287,12 +291,12 @@ export namespace GroupModules {
                 inputs: { implicits: [...implicitInputs], explicits: this.getExplicitInputs() },
                 outputs: { implicits: [...implicitOutputs], explicits: this.getExplicitOutputs() }
             }
-            
+
         }
 
         getAllSlots$(): Observable<GroupSlots> {
 
-            return this.mapTo( wf => this.getAllSlots(wf))
+            return this.mapTo(wf => this.getAllSlots(wf))
         }
 
         getAllInputSlots(workflow: Workflow): Array<SlotRef> {
@@ -308,12 +312,12 @@ export namespace GroupModules {
 
         getAllInputSlots$(): Observable<Array<SlotRef>> {
 
-            return this.mapTo( wf => this.getAllInputSlots(wf))
+            return this.mapTo(wf => this.getAllInputSlots(wf))
         }
 
         getAllOutputSlots$(): Observable<Array<SlotRef>> {
 
-            return this.mapTo( wf => this.getAllOutputSlots(wf))
+            return this.mapTo(wf => this.getAllOutputSlots(wf))
         }
 
         getExplicitInputs(): Array<SlotRef> {
@@ -419,7 +423,7 @@ export namespace GroupModules {
 
             let data = {
                 tag: "g",
-                moduleId:groupModule.moduleId,
+                moduleId: groupModule.moduleId,
                 children: {
                     content: { tag: "rect", class: ["active-layer content"], attributes: { width, height, x: -width / 2, y: -height / 2, filter: "url(#shadow)" } },
                     headerBg: {
@@ -435,23 +439,28 @@ export namespace GroupModules {
                         attributes: { x: -width / 2 + 10, y: -height / 2 - 5 }
                     },
                     toggle: {
-                        tag: 'g', style: { transform: `translateX(${width /2 - headerHeight / 2}px) translateY(${-height/2 - headerHeight / 2}px)` }, class: "module header-action",
+                        tag: 'g', style: { transform: `translateX(${width / 2 - headerHeight / 2}px) translateY(${-height / 2 - headerHeight / 2}px)` }, class: "module header-action",
                         children: {
-                            "reduce-bg": { 
+                            "reduce-bg": {
                                 tag: 'circle', attributes: { r: `${headerHeight / 3}px` },
-                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId }) 
+                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId })
                             },
-                            "reduce-icon": { 
-                                tag:'g', style:{transform:`translateX(-4px) translateY(-6.5px) scale(0.3)`}, 
-                                children:{ 
-                                    content:{
-                                        tag:'g',style:{ transform:`scale(0.083)`},
+                            "reduce-icon": {
+                                tag: 'g', style: { transform: `translateX(-4px) translateY(-6.5px) scale(0.3)` },
+                                children: {
+                                    content: {
+                                        tag: 'g', style: { transform: `scale(0.083)` },
                                         children: {
-                                            reduce:{tag:'path', 
-                                            attributes:{d:"M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"}}
-                                },
-                                onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId }) 
-                            }} }}
+                                            reduce: {
+                                                tag: 'path',
+                                                attributes: { d: "M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z" }
+                                            }
+                                        },
+                                        onclick: () => groupModule.Factory.BuilderView.notifier$.next({ type: 'closeLayer', data: groupModule.moduleId })
+                                    }
+                                }
+                            }
+                        }
                     },
                     inputs: { tag: 'g', children: inputs.reduce((acc, input, i) => Object.assign(acc, toPlug('input', input, i)), {}) },
                     outputs: { tag: 'g', children: outputs.reduce((acc, output, i) => Object.assign(acc, toPlug('output', output, i)), {}) },
