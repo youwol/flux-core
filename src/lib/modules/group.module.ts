@@ -110,10 +110,10 @@ export namespace GroupModules {
         render: (mdle, icon) => groupModulePlot({ module: mdle, icon: icon, width: 150, vMargin: 50, vStep: 25 }),
         icon: svgIcon
     })
-    export class Module extends ModuleFlux implements WorkflowDependantTrait{
+    export class Module extends ModuleFlux implements WorkflowDependantTrait, SideEffects {
 
         public readonly workflow$: Observable<Workflow>
-
+        public readonly workflowDistinct$: Observable<Workflow>
         public readonly internalEntries = new Array<Pipe<any>>()
         public readonly explicitOutputs = new Array<Pipe<any>>()
         public readonly internalEntrySlots = new Array<SlotRef>()
@@ -122,10 +122,11 @@ export namespace GroupModules {
         public readonly staticStorage: StaticStorage
 
         /**
-         * Store the first workflow observed.
-         * It should be deleted, used in groupModulePlot function
+         * Store the last workflow observed.
+         * Should not be used -> it'll be deleted soon hopefully, used in groupModulePlot function
          */
-        public _workflow : Workflow
+        public _workflow: Workflow
+        public subscriptionWorkflow: Subscription
 
         constructor({ workflow$, staticStorage, moduleId, configuration, Factory, cache, environment, helpers,
             userData
@@ -145,11 +146,6 @@ export namespace GroupModules {
             this.workflow$ = workflow$
             this.staticStorage = staticStorage
             let staticConf = this.getPersistentData<PersistentData>()
-
-            this.workflow$.pipe(
-                take(1),
-                tap( workflow => this._workflow = workflow )
-            ).subscribe()
 
             for (let i = 0; i < staticConf.explicitInputsCount; i++) {
 
@@ -193,9 +189,28 @@ export namespace GroupModules {
                     }
                 })
             }
+            this.workflowDistinct$ = this.workflow$.pipe(
+                filter((workflow) => {
+                    return this.hasImpact(workflow)
+                }),
+                shareReplay()
+            )
         }
 
         applyChildrenSideEffects(workflow: Workflow){
+        apply() {
+            if (this.subscriptionWorkflow)
+                return
+            this.subscriptionWorkflow = this.workflowDistinct$.pipe(
+                tap(workflow => {
+                    this._workflow = workflow
+                })
+            ).subscribe()
+        }
+
+        dispose() {
+            this.subscriptionWorkflow && this.subscriptionWorkflow.unsubscribe()
+        }
 
             this.getAllChildren(workflow).forEach( mdle => {
                 instanceOfSideEffects(mdle) && mdle.apply() 
@@ -309,6 +324,39 @@ export namespace GroupModules {
             return this.outputSlots.filter((out) => !this.internalEntrySlots.map(out => out.slotId).includes(out.slotId))
         }
 
+        hasImpact(candidate: Workflow) {
+
+            if (!this._workflow){
+                console.log("Workflow created!! " + this.configuration.title)
+                return true
+            }
+            let allModulesNow = this.getAllChildren(candidate)
+            let allModulesBefore = this.getAllChildren(this._workflow)
+            let delta = workflowDelta(this._workflow, candidate)
+            let hasDiffMdles = delta.modules.createdElements.some(created => allModulesNow.includes(created)) ||
+                delta.modules.removedElements.some(removed => allModulesBefore.includes(removed))
+    
+            if (hasDiffMdles){
+                console.log("Workflow updated from modules!! " + this.configuration.title, {delta:delta.modules})
+                return true
+            }
+    
+            let connectionsNow = this.getConnections(candidate)
+            let connectionsBefore = this.getConnections(this._workflow)
+    
+            let hasDiffConnections = connectionsBefore.implicits.inputs.length != connectionsNow.implicits.inputs.length ||
+                connectionsBefore.implicits.outputs.length != connectionsNow.implicits.outputs.length ||
+                connectionsBefore.internals.length != connectionsNow.internals.length
+    
+            if (hasDiffConnections){
+                console.log("Workflow updated from connections!! " + this.configuration.title, {connectionsNow, connectionsBefore})
+                return true
+            }
+            // Missing test: if number of connections are the same but the modules connected are different
+            // Unlikely to happen in 'regular use' using flux-builder, but can happen in other applications
+    
+            return false
+        }
     }
 
     //----------------

@@ -135,7 +135,7 @@ export function duplicateWorkflow$({rootComponent, indexEntryPoint, name}:{
     name: string
     }) : Observable<WorkflowFork> {
 
-    return rootComponent.workflow$.pipe(
+    return rootComponent.workflowDistinct$.pipe(
         map(workflow => {
             return duplicateResolvedWorkflow({
                 originalWorkflow:workflow,
