@@ -81,8 +81,7 @@ export interface WorkflowSchema{
 
     modules:Array<ModuleSchema>,
     connections:Array<ConnectionSchema>
-    plugins:Array<PluginSchema>,
-    rootLayerTree : LayerTreeSchema
+    plugins:Array<PluginSchema>
 }
 
 /**
@@ -130,7 +129,6 @@ export interface ProjectSchema{
     name: string
     schemaVersion: string
     description: string
-    runnerRendering: RunnerRenderingSchema,
     builderRendering: BuilderRenderingSchema,
     requirements: RequirementsSchema,
     workflow: WorkflowSchema

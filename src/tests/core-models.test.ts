@@ -77,15 +77,12 @@ test('models init', () => {
         description:"description", 
         requirements:reqs, 
         workflow: wf,
-        builderRendering, 
-        runnerRendering
+        builderRendering
     })
     expect(project.name).toEqual("name")
     expect(project.schemaVersion).toEqual("0.0")
     expect(project.description).toEqual("description")
     expect(project.requirements).toEqual(reqs)
     expect(project.workflow).toEqual(wf)
-    expect(project.builderRendering).toEqual(builderRendering)
-    expect(project.runnerRendering).toEqual(runnerRendering)    
-
+    expect(project.builderRendering).toEqual(builderRendering) 
 })

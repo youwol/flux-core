@@ -26,8 +26,6 @@ test('load empty project', (done) => {
         expect(project.workflow.modules).toEqual([])
         expect(project.builderRendering.modulesView).toEqual([])
         expect(project.builderRendering.connectionsView).toEqual([])
-        expect(project.runnerRendering.layout).toEqual("")
-        expect(project.runnerRendering.style).toEqual("")
 
         expect(packages.length).toEqual(1)
         expect(packages[0].name).toEqual("@youwol/flux-core")
@@ -51,8 +49,6 @@ test('load simple project', (done) => {
         expect(project.workflow.connections.length).toEqual(2)
         expect(project.builderRendering.modulesView.length).toEqual(3)
         expect(project.builderRendering.connectionsView.length).toEqual(0)
-        expect(project.runnerRendering.layout).toEqual("")
-        expect(project.runnerRendering.style).toEqual("")
 
         expect(packages.length).toEqual(2)           
         expect(packages[0].name).toEqual("@youwol/flux-core")

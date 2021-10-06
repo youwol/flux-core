@@ -219,16 +219,14 @@ export class Project{
     public readonly requirements: Requirements 
     public readonly workflow: Workflow
     public readonly builderRendering: BuilderRendering
-    public readonly runnerRendering: RunnerRendering
 
-    constructor( {name, schemaVersion,description, requirements, workflow, builderRendering, runnerRendering} : { 
+    constructor( {name, schemaVersion,description, requirements, workflow, builderRendering} : { 
         name: string,
         schemaVersion: string,
         description: string,
         requirements: Requirements,
         workflow: Workflow,
-        builderRendering: BuilderRendering, 
-        runnerRendering: RunnerRendering
+        builderRendering: BuilderRendering
     }){
         this.name = name
         this.schemaVersion = schemaVersion
@@ -236,7 +234,71 @@ export class Project{
         this.requirements = requirements
         this.workflow = workflow
         this.builderRendering = builderRendering
-        this.runnerRendering = runnerRendering
     }
 }
 
+
+export function getCollectionsDelta<T>(oldCollection : Array<T>, newCollection : Array<T>) : {createdElements: Array<T>,removedElements: Array<T>}{
+
+    let createdElements = newCollection.filter(x => !oldCollection.includes(x));
+    let removedElements = oldCollection.filter(x => !newCollection.includes(x));
+    return { createdElements,removedElements}
+}
+    
+export interface WorkflowDelta{
+    connections: {createdElements: Array<Connection>,removedElements: Array<Connection>},
+    modules:{createdElements: Array<ModuleFlux>,removedElements: Array<ModuleFlux>},
+    hasDiff: boolean
+}
+
+export function workflowDelta(oldWf:Workflow,newWf:Workflow): WorkflowDelta{
+    
+    let diffsConnection = {createdElements:[], removedElements:[]}
+    let diffModules = {createdElements:[], removedElements:[]}
+    if( newWf.connections  !== oldWf.connections){        
+        let diffs = getCollectionsDelta( oldWf.connections, newWf.connections)
+        diffsConnection.createdElements.push(...diffs.createdElements)
+        diffsConnection.removedElements.push(...diffs.removedElements)
+    }
+  
+    if( newWf.modules  !== oldWf.modules){
+        let diffs = getCollectionsDelta( oldWf.modules, newWf.modules )
+        diffModules.createdElements.push(...diffs.createdElements)
+        diffModules.removedElements.push(...diffs.removedElements)
+
+        let createdMdlesId =  diffs.createdElements.map(m=>m.moduleId)
+        let deletedMdlesId =  diffs.removedElements.map(m=>m.moduleId)
+        
+        diffsConnection.createdElements.push( ...newWf.connections.filter( c =>  createdMdlesId.includes(c.end.moduleId ) ), 
+                                              ...newWf.connections.filter( c =>  createdMdlesId.includes(c.start.moduleId ) ) )
+
+        diffsConnection.removedElements.push( ...oldWf.connections.filter( c =>  deletedMdlesId.includes(c.start.moduleId ) || deletedMdlesId.includes(c.end.moduleId )  ) )
+    }
+    if( newWf.plugins  !== oldWf.plugins){
+        
+        let diffs = getCollectionsDelta( oldWf.plugins, newWf.plugins )
+        diffModules.createdElements.push(...diffs.createdElements)
+        diffModules.removedElements.push(...diffs.removedElements)
+
+        let createdMdlesId =  diffs.createdElements.map(m=>m.moduleId)
+        let deletedMdlesId =  diffs.removedElements.map(m=>m.moduleId)
+        
+        diffsConnection.createdElements.push( ...newWf.connections.filter( c =>  createdMdlesId.includes(c.end.moduleId ) ), 
+                                              ...newWf.connections.filter( c =>  createdMdlesId.includes(c.start.moduleId ) ) )
+
+        diffsConnection.removedElements.push( ...oldWf.connections.filter( c =>  deletedMdlesId.includes(c.start.moduleId ) || deletedMdlesId.includes(c.end.moduleId )  ) )
+    }
+    diffsConnection.createdElements = Array.from(new Set(diffsConnection.createdElements))
+    diffsConnection.removedElements = Array.from(new Set(diffsConnection.removedElements))
+
+    diffModules.createdElements = Array.from(new Set(diffModules.createdElements))
+    diffModules.removedElements = Array.from(new Set(diffModules.removedElements))
+
+    let count = diffsConnection.createdElements.length + diffsConnection.removedElements.length +
+    diffModules.createdElements.length + diffModules.removedElements.length
+    return { 
+        connections: diffsConnection, 
+        modules: diffModules, 
+        hasDiff: count >0
+    }  
+  }
