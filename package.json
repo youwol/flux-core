@@ -23,9 +23,9 @@
     "peerDependencies": {
         "@youwol/cdn-client": "^0.0.8",
         "@youwol/flux-view": "^0.0.9",
-        "lodash": "4.17.15",
+        "lodash": "^4.17.15",
         "reflect-metadata": "0.x",
-        "rxjs": "6.5.5"
+        "rxjs": "^6.5.5"
     },
     "devDependencies": {
         "@types/jest": "26.0.22",
