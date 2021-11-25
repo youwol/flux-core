@@ -65,10 +65,11 @@ export function loadProject$(
     subscriptionsStore: Map<Connection, any>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+    onEvent?: (CdnEvent) => void
 
     let projectData$ = project$.pipe(
-        mergeMap( (project: ProjectSchema) => {
-            return loadProjectDependencies$(project, environment) 
+        mergeMap((project: ProjectSchema) => {
+            return loadProjectDependencies$(project, environment, onEvent)
         }),
         map(({ project, packages }) => {
             return createProject(project, packages, workflow$, subscriptionsStore, environment)
@@ -84,8 +85,9 @@ export function loadProjectDatabase$(
     subscriptionsStore: Map<Connection,Subscription>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}>{
+    onEvent?: (CdnEvent) => void
 
-    return loadProject$(environment.getProject(projectId), workflow$, subscriptionsStore, environment)
+    return loadProject$(environment.getProject(projectId), workflow$, subscriptionsStore, environment, onEvent)
 }
 
 
@@ -95,9 +97,10 @@ export function loadProjectURI$(
     subscriptionsStore:  Map<Connection,Subscription>, 
     environment: IEnvironment
     ): Observable<{project:Project, packages: Array<FluxPack>, modulesFactory: Map<string, Factory>}> {
+    onEvent?: (CdnEvent) => void
 
     let project = JSON.parse(decodeURIComponent(projectURI)) as ProjectSchema
-    return loadProject$( of(project), workflow$, subscriptionsStore, environment)
+    return loadProject$(of(project), workflow$, subscriptionsStore, environment, onEvent)
 }
 
 
