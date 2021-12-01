@@ -87,7 +87,7 @@ export function navigate(
     },
 
     from(moduleId: string): ModuleNavigation<ModuleFlux> {
-      _log.debug("from {0}", { value: moduleId });
+      _log.debug("from {0}", moduleId);
       const matching = this.fromMatching(predicateModuleId(moduleId));
       if (!matching) {
         throw new Error(`Cannot navigate to module ${moduleId}`);
@@ -96,7 +96,7 @@ export function navigate(
     },
 
     fromGroup(moduleId: string): ModuleNavigation<GroupModules.Module> {
-      _log.debug("fromGroup {0}", { value: moduleId });
+      _log.debug("fromGroup {0}", moduleId);
       const matching = this.fromGroupMatching(predicateModuleId(moduleId));
       if (!matching) {
         throw new Error(`Cannot navigate to group ${moduleId}`);
@@ -105,7 +105,7 @@ export function navigate(
     },
 
     fromComponent(moduleId: string): ModuleNavigation<Component.Module> {
-      _log.debug("fromComponent {0}", { value: moduleId });
+      _log.debug("fromComponent {0}", moduleId);
       const matching = this.fromComponentMatching(predicateModuleId(moduleId));
       if (!matching) {
         throw new Error(`Cannot navigate to component ${moduleId}`);
