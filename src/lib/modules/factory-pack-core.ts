@@ -1,4 +1,6 @@
-import { FluxPack } from "../models/models-base"
-import {AUTO_GENERATED} from "../../auto_generated"
+/** @format */
 
-export let packCore = new FluxPack(AUTO_GENERATED)
+import { AUTO_GENERATED } from '../../auto_generated'
+import { FluxPack } from '../models/models-base'
+
+export const packCore = new FluxPack(AUTO_GENERATED)

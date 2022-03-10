@@ -6,3 +6,5 @@ junit.xml
 src/auto_generated.ts
 cdn.zip
 __pycache__/
+*.iml
+yarn-error.log
