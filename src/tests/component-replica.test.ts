@@ -1,7 +1,8 @@
+/** @format */
 
 //import { ComponentReplica } from '../lib/component-replica.plugin'
 
-test("Need to be repluged", () =>{})
+test('Need to be repluged', () => {})
 /*
 test("basic replication", (done) =>{
     

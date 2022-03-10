@@ -1,362 +1,371 @@
-import { Schema, Property, ModuleFlux, Pipe, Cache, ValueKey, PluginFlux, Flux, BuilderView, RenderView, createHTMLElement, Factory} from "../index"
-import { Subject, ReplaySubject } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { freeContract } from "../lib/models/contract";
-import { Context } from "../lib/models/context";
-import { testPack } from "../lib/modules/test-modules";
+/** @format */
 
+import {
+    Schema,
+    Property,
+    ModuleFlux,
+    Pipe,
+    Cache,
+    ValueKey,
+    PluginFlux,
+    Flux,
+    BuilderView,
+    RenderView,
+    createHTMLElement,
+} from '../index'
+import { Subject, ReplaySubject } from 'rxjs'
+import { map } from 'rxjs/operators'
+import { freeContract } from '../lib/models/contract'
+import { Context } from '../lib/models/context'
+import { testPack } from '../lib/modules/test-modules'
 
-console.log = () =>{}
-export namespace Schemas{
-
+console.log = () => {}
+export namespace Schemas {
     @Schema({
         pack: testPack,
-        description: "Input type"
+        description: 'Input type',
     })
     export class Input {
-
-        @Property({ description: "a number" })
+        @Property({ description: 'a number' })
         readonly value: number
 
-        constructor({value}){
+        constructor({ value }) {
             this.value = value
         }
     }
 
     @Schema({
         pack: testPack,
-        description: "Output type"
+        description: 'Output type',
     })
     export class Output {
-
-        @Property({ description: "a number property" })
+        @Property({ description: 'a number property' })
         readonly value: number
 
-        constructor({value}){
+        constructor({ value }) {
             this.value = value
         }
     }
 }
 
-export namespace ModuleTest{
-        
+export namespace ModuleTest {
     @Schema({
         pack: testPack,
-        description: "PersistentData for ModuleTest"
+        description: 'PersistentData for ModuleTest',
     })
-    export class PersistentData{
-        constructor() {
-        }
+    export class PersistentData {
+        constructor() {}
     }
     @Flux({
         pack: testPack,
         namespace: ModuleTest,
-        id: "ModuleTest",
-        displayName: "ModuleTest",
-        description: "A test module"
+        id: 'ModuleTest',
+        displayName: 'ModuleTest',
+        description: 'A test module',
     })
     @BuilderView({
         namespace: ModuleTest,
-        icon: ""
+        icon: '',
     })
-    export class Module extends ModuleFlux{
-
+    export class Module extends ModuleFlux {
         static dataReceived$ = new Subject()
-        readonly output$ : Pipe<Schemas.Output>
+        readonly output$: Pipe<Schemas.Output>
 
-        constructor(params){ 
-            super(params)    
-            
+        constructor(params) {
+            super(params)
+
             this.addInput({
-                id:"input", 
-                description: "",
+                id: 'input',
+                description: '',
                 contract: freeContract(),
-                onTriggered: this.square
+                onTriggered: this.square,
             })
 
-            this.output$ = this.addOutput<Schemas.Output>({id:"output"})
+            this.output$ = this.addOutput<Schemas.Output>({ id: 'output' })
         }
 
-        square({data, context}, {cache} : {cache:Cache} ){
-            let [d, fromCache] = cache.getOrCreateWithStatus(
-                new ValueKey("value",data.value),
-                () => new Schemas.Output( {value:data.value*data.value} ) 
+        square({ data, context }, { cache }: { cache: Cache }) {
+            const [d, fromCache] = cache.getOrCreateWithStatus(
+                new ValueKey('value', data.value),
+                () => new Schemas.Output({ value: data.value * data.value }),
             )
-            Module.dataReceived$.next({moduleId:this.moduleId, data:data})
+            Module.dataReceived$.next({ moduleId: this.moduleId, data: data })
             context.withChild(
                 "send with updated user's context",
-                (context) => this.output$.next({ data:d, context}),
-                {fromCache}
+                (context) => this.output$.next({ data: d, context }),
+                { fromCache },
             )
         }
     }
 }
 
-export namespace PluginTest{
-        
+export namespace PluginTest {
     @Schema({
         pack: testPack,
-        description: "PersistentData for PluginTest"
+        description: 'PersistentData for PluginTest',
     })
-    export class PersistentData{
-        constructor() {
-        }
+    export class PersistentData {
+        constructor() {}
     }
     @Flux({
         pack: testPack,
         namespace: PluginTest,
-        id: "PluginTest",
-        displayName: "PluginTest",
-        description: "A test plugin"
+        id: 'PluginTest',
+        displayName: 'PluginTest',
+        description: 'A test plugin',
     })
     @BuilderView({
         namespace: PluginTest,
-        icon: ""
+        icon: '',
     })
-    export class Module extends PluginFlux<ModuleTest.Module>{
+    export class Module extends PluginFlux<ModuleTest.Module> {
+        readonly output$: Pipe<Schemas.Input>
 
-        readonly output$ : Pipe<Schemas.Input>
+        constructor(params) {
+            super(params)
 
-        constructor(params){ 
-            super(params)    
-            
             this.addInput({
-                id:"input",
-                description:"",
+                id: 'input',
+                description: '',
                 contract: freeContract(),
-                onTriggered: this.square
+                onTriggered: this.square,
             })
 
-            this.output$ = this.addOutput({id:"output"})
+            this.output$ = this.addOutput({ id: 'output' })
         }
 
         square(
-            {data, context} : {data: Schemas.Input, context: Context}
-            , {cache} : {cache:Cache}
-            ){
-            
-            let [d, fromCache] = cache.getOrCreateWithStatus(
-                new ValueKey("value",data.value), 
-                () => new Schemas.Output( {value:data.value*data.value} ) 
+            { data, context }: { data: Schemas.Input; context: Context },
+            { cache }: { cache: Cache },
+        ) {
+            const [d, fromCache] = cache.getOrCreateWithStatus(
+                new ValueKey('value', data.value),
+                () => new Schemas.Output({ value: data.value * data.value }),
             )
-            context.withChild( 
-                "send output with updated user's context", 
-                () => { this.output$.next({ data:d, context })}, 
-                {fromCache}
+            context.withChild(
+                "send output with updated user's context",
+                () => {
+                    this.output$.next({ data: d, context })
+                },
+                { fromCache },
             )
         }
     }
 }
 
-
 /**
  */
-export namespace DropDown{
-    export let defaultConfigItems = `
+export namespace DropDown {
+    export const defaultConfigItems = `
 return [{text: "option 1", value: { n : 0 }},
         {text: "option 2",value: { n : 1 }}]
 `
     @Schema({
         pack: testPack,
-        description: "PersistentData for DropDown"
+        description: 'PersistentData for DropDown',
     })
     export class PersistentData {
+        @Property({ description: 'text on the widget' })
+        text: string
 
-        @Property({ description: "text on the widget" })
-        text : string
+        @Property({ description: 'index selected' })
+        selectedIndex: number
 
-        @Property({ description: "index selected" })
-        selectedIndex : number
+        @Property({
+            description: 'items',
+            type: 'code',
+        })
+        items: string
 
-
-        @Property({ 
-            description: "items",
-            type: "code" })
-        items : string
-
-        constructor({text, items,selectedIndex } :{text?:string, items?: string, selectedIndex?:number}= {}) {
-
-            this.text = (text != undefined) ? text : "select"
-            this.items = (items != undefined) ? items : defaultConfigItems
-            this.selectedIndex = (items != undefined) ? selectedIndex : 0
+        constructor({
+            text,
+            items,
+            selectedIndex,
+        }: { text?: string; items?: string; selectedIndex?: number } = {}) {
+            this.text = text != undefined ? text : 'select'
+            this.items = items != undefined ? items : defaultConfigItems
+            this.selectedIndex = items != undefined ? selectedIndex : 0
         }
 
         getItems() {
-            return typeof(this.items)=='string' ? new Function(this.items)() : this.items
+            return typeof this.items == 'string'
+                ? new Function(this.items)()
+                : this.items
         }
     }
-
 
     @Flux({
         pack: testPack,
         namespace: DropDown,
-        id: "DropDown",
-        displayName: "DropDown",
-        description: "A drop down menu"
+        id: 'DropDown',
+        displayName: 'DropDown',
+        description: 'A drop down menu',
     })
     @BuilderView({
         namespace: DropDown,
-        icon: ""
+        icon: '',
     })
     @RenderView({
         namespace: DropDown,
-        render: (mdle: Module) => renderHtmlElement(mdle)
+        render: (mdle: Module) => renderHtmlElement(mdle),
     })
     export class Module extends ModuleFlux {
-        
-        selection$ : any
+        selection$: any
 
-        constructor( params ){
-            super(params) 
+        constructor(params) {
+            super(params)
 
-            let conf : any = this.getPersistentData()
-            let items = conf.getItems()
+            const conf: any = this.getPersistentData()
+            const items = conf.getItems()
 
-            this.selection$ = this.addOutput({id:"selection"} )
-            this.selection$.next({data: items[conf.selectedIndex].value})
+            this.selection$ = this.addOutput({ id: 'selection' })
+            this.selection$.next({ data: items[conf.selectedIndex].value })
         }
 
-        select( value:string ) {   
-            this.selection$.next(  {data: value} )
+        select(value: string) {
+            this.selection$.next({ data: value })
         }
     }
-
 
     //-------------------------------------------------------------------------
     //-------------------------------------------------------------------------
 
     function renderHtmlElement(mdle: Module) {
-        let conf  : any = mdle.getPersistentData()
-        let div = <HTMLDivElement>(document.createElement('div'))
-        let select = <HTMLSelectElement>(document.createElement('select'))
+        const conf: any = mdle.getPersistentData()
+        const div = document.createElement('div')
+        const select = document.createElement('select')
         div.appendChild(select)
-        let items = conf.getItems()
+        const items = conf.getItems()
 
-        items.forEach( item =>{
-            let option = <HTMLOptionElement>(document.createElement('option'))
-            option.classList.add("dropdown-item")
+        items.forEach((item) => {
+            const option = document.createElement('option')
+            option.classList.add('dropdown-item')
             option.innerHTML = item.text
             option.value = item.text
             select.appendChild(option)
         })
         select.selectedIndex = conf.selectedIndex
-        select.onchange = ( ) => mdle.select(items[select.selectedIndex].value)   
-        
+        select.onchange = () => mdle.select(items[select.selectedIndex].value)
+
         return div
     }
 }
 
-
 export namespace Console {
-
     @Schema({
         pack: testPack,
-        description: "PersistentData for Console"
+        description: 'PersistentData for Console',
     })
     export class PersistentData {
+        @Property({ description: 'log prefix' })
+        readonly prefix: string
 
-        @Property({ description: "log prefix" })
-        readonly prefix : string
-
-        constructor( {prefix} = {prefix: "Console Module"}) {
+        constructor({ prefix } = { prefix: 'Console Module' }) {
             this.prefix = prefix
         }
     }
 
     @Flux({
-        pack:           testPack,
-        namespace:      Console,
-        id:             "Console",
-        displayName:    "Console",
-        description:    "To log in the debug console"
+        pack: testPack,
+        namespace: Console,
+        id: 'Console',
+        displayName: 'Console',
+        description: 'To log in the debug console',
     })
     @BuilderView({
-        namespace:      Console,
-        icon:           ""
+        namespace: Console,
+        icon: '',
     })
     export class Module extends ModuleFlux {
-        
-        constructor(params){ 
-            super(params)                        
+        constructor(params) {
+            super(params)
             this.addInput({
-                id:"message", 
-                description: "",
+                id: 'message',
+                description: '',
                 contract: freeContract(),
-                onTriggered: ({data, configuration, context} ) => 
-                    console.log(configuration.prefix, {data,configuration,context}) 
+                onTriggered: ({ data, configuration, context }) =>
+                    console.log(configuration.prefix, {
+                        data,
+                        configuration,
+                        context,
+                    }),
             })
         }
     }
-
 }
-
-
 
 /**
  */
-export namespace Label{
-    
+export namespace Label {
     @Schema({
         pack: testPack,
-        description: "PersistentData for Label"
+        description: 'PersistentData for Label',
     })
     export class PersistentData {
+        @Property({ description: 'text on the label' })
+        text: string
 
-        @Property({ description: "text on the label" })
-        text : string
-
-        constructor({text} :{text?:string}= {}) {
-            this.text = (text != undefined) ? text : "default-text"
+        constructor({ text }: { text?: string } = {}) {
+            this.text = text != undefined ? text : 'default-text'
         }
     }
 
-
-    @Flux({ pack: testPack, namespace: Label, id: "Label", displayName: "Label", description: "Label" })
-    @BuilderView({ namespace: Label, icon: ""})
-    @RenderView({ namespace: Label,
-        render: (mdle: Module) => renderHtmlElement(mdle)
+    @Flux({
+        pack: testPack,
+        namespace: Label,
+        id: 'Label',
+        displayName: 'Label',
+        description: 'Label',
+    })
+    @BuilderView({ namespace: Label, icon: '' })
+    @RenderView({
+        namespace: Label,
+        render: (mdle: Module) => renderHtmlElement(mdle),
     })
     export class Module extends ModuleFlux {
-        
-        value$ : any
+        value$: any
         display$ = new ReplaySubject<string>()
 
-        constructor( params ){
-            super(params) 
+        constructor(params) {
+            super(params)
 
-            this.addInput({ id: "value", description:"", contract: freeContract(), onTriggered: this.set })
+            this.addInput({
+                id: 'value',
+                description: '',
+                contract: freeContract(),
+                onTriggered: this.set,
+            })
 
-            this.value$ = this.addOutput({id:"value"})
+            this.value$ = this.addOutput({ id: 'value' })
             //this.set(this.getPersistentData<PersistentData>().text)
         }
 
-        set( {data , configuration, context} ) {   
+        set({ data, configuration, context }) {
             this.display$.next(data.value)
-            this.value$.next(  {data, configuration, context})
+            this.value$.next({ data, configuration, context })
         }
     }
-
 
     //-------------------------------------------------------------------------
     //-------------------------------------------------------------------------
 
     function renderHtmlElement(mdle: Module) {
-       
-        let subscriptions = []
-        let view = createHTMLElement({
+        const subscriptions = []
+        const view = createHTMLElement({
             data: {
-                __label: mdle.display$.pipe( map( (text) =>{
-                    return { innerHTML: text}
-                }))
+                __label: mdle.display$.pipe(
+                    map((text) => {
+                        return { innerHTML: text }
+                    }),
+                ),
             },
             subscriptions,
             classesDict: {
-                "btn-active":               "btn btn-outline-primary mx-2",
-                "btn-inactive":             "btn btn-outline-secondary mx-2"
-            }
-        });
+                'btn-active': 'btn btn-outline-primary mx-2',
+                'btn-inactive': 'btn btn-outline-secondary mx-2',
+            },
+        })
 
         return view
     }
 }
-
