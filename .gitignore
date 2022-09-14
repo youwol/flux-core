@@ -3,8 +3,7 @@ node_modules
 dist/
 coverage/
 junit.xml
-src/auto_generated.ts
 cdn.zip
-__pycache__/
+__pycache__
 *.iml
-yarn-error.log
+.template

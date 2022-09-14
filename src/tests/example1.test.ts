@@ -1,6 +1,6 @@
 /** @format */
 
-import { AUTO_GENERATED } from '../auto_generated'
+import { setup } from '../auto-generated'
 import { Context, ErrorLog } from '../lib/models/context'
 import {
     expectAnyOf,
@@ -25,6 +25,8 @@ import { ConfigurationError, ContractUnfulfilledError } from '..'
 import { ModuleDataEmittor } from '../lib/modules/test-modules'
 console.log = () => {}
 console.error = () => {}
+
+const AUTO_GENERATED = setup
 /*
 In this example we define a module that does operation on two numbers, either addition or multiplication.
 It features one input that is expected to contains two numbers (implicit, this is explained latter)

@@ -1,25 +1,29 @@
-<!-- @format -->
+# @youwol/flux-core
 
-# flux-core
+Core library to create flux applications
 
-<p>
-    <a href="https://github.com/kefranabg/readme-md-generator/graphs/commit-activity" target="_blank">
-        <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />
-    </a>
-    <a href="https://github.com/kefranabg/readme-md-generator/blob/master/LICENSE" target="_blank">
-        <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
-    </a>
-</p>
+This library is part of the hybrid cloud/local ecosystem
+[YouWol](https://platform.youwol.com/applications/@youwol/platform/latest).
 
-Foundation library for Flux applications
+## Links
 
-## Installation, Build & Test
+[Online user-guide](https://l.youwol.com/doc/@youwol/flux-core)
+
+[Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/flux-core)
+
+[Package on npm](https://www.npmjs.com/package/@youwol/flux-core)
+
+[Source on GitHub](https://github.com/youwol/flux-core)
+
+# Installation, Build, Test
 
 To install the required dependencies:
 
 ```shell
 yarn
 ```
+
+---
 
 To build for development:
 
@@ -33,28 +37,24 @@ To build for production:
 yarn build:prod
 ```
 
-To test:
+---
+
+To run tests:
 
 ```shell
 yarn test
 ```
 
-To generate code documentation:
+Coverage can be evaluated using:
+
+```shell
+yarn test-coverage
+```
+
+---
+
+To generate code's documentation:
 
 ```shell
 yarn doc
 ```
-
-## Usage
-
-The primary usage of _flux-core_ is to provide the foundation to create modules for
-the _YouWol_'s low code solution _Flux_. An illustrated and commented example can be
-found [here](https://github.com/youwol/flux-core/blob/main/src/tests/example1.test.ts)
-
-## Documentation
-
-The documentation of the code is still a work in progress, in particular it is not yet as well organized
-as we would like it to be.
-
-For new comers we recommend to start with the page **core-concepts** referenced
-in the right panel (when opening the page /dist/docs/index.html after having generated the documentation).

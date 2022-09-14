@@ -1182,7 +1182,7 @@ export abstract class ModuleFlux {
         contract: IExpectation<unknown>
         onTriggered: (
             { data, configuration, context },
-            { cache: Cache },
+            { cache }: { cache: Cache },
         ) => void
     }) {
         id = id || 'input'
