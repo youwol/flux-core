@@ -2,13 +2,21 @@ import shutil
 from pathlib import Path
 
 from youwol.pipelines.pipeline_typescript_weback_npm import Template, PackageType, Dependencies, \
-    RunTimeDeps, generate_template, DevServer
+    RunTimeDeps, generate_template, Bundles, MainModule
 from youwol_utils import parse_json
 
 folder_path = Path(__file__).parent
 
 pkg_json = parse_json(folder_path / 'package.json')
 
+load_dependencies = {
+    'lodash': '^4.17.15',
+    'rxjs': '^6.5.5',
+    '@youwol/cdn-client': '^1.0.2',
+    '@youwol/logging': '^0.0.2',
+    '@youwol/flux-view': '^1.0.3',
+    'reflect-metadata': '0.1.13'
+}
 
 template = Template(
     path=folder_path,
@@ -19,20 +27,19 @@ template = Template(
     author=pkg_json['author'],
     dependencies=Dependencies(
         runTime=RunTimeDeps(
-            load={
-                'lodash': '^4.17.15',
-                'rxjs': '^6.5.5',
-                '@youwol/cdn-client': '^1.0.2',
-                '@youwol/logging': '^0.0.2',
-                '@youwol/flux-view': '^1.0.3',
-                'reflect-metadata': '0.1.13'
-            },
-            includedInBundle=[]
+            externals=load_dependencies,
+            includedInBundle={}
         ),
         devTime={
         }
     ),
-    userGuide=True
+    userGuide=True,
+    bundles=Bundles(
+        mainModule=MainModule(
+            entryFile='./index.ts',
+            loadDependencies=list(load_dependencies.keys())
+        )
+    )
 )
 
 generate_template(template)
