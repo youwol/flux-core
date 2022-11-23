@@ -1,7 +1,7 @@
 {
     "name": "@youwol/flux-core",
     "description": "Core library to create flux applications",
-    "version": "0.2.1",
+    "version": "0.2.2-wip",
     "author": "greinisch@youwol.com",
     "homepage": "https://github.com/youwol/flux-core#README.md",
     "main": "dist/@youwol/flux-core.js",
