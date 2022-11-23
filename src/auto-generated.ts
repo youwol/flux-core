@@ -99,7 +99,7 @@ const entries = {
 export const setup = {
     name:'@youwol/flux-core',
         assetId:'QHlvdXdvbC9mbHV4LWNvcmU=',
-    version:'0.2.2-wip',
+    version:'0.2.2',
     shortDescription:"Core library to create flux applications",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/flux-core',
     npmPackage:'https://www.npmjs.com/package/@youwol/flux-core',
@@ -134,7 +134,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/flux-core#0.2.2-wip~dist/@youwol/flux-core/${entry.name}.js`
+            `@youwol/flux-core#0.2.2~dist/@youwol/flux-core/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
