@@ -114,7 +114,7 @@ export interface IEnvironment {
 
     getProject(projectId): Observable<ProjectSchema>
 
-    postProject(projectId: string, project: Object): Observable<void>
+    postProject(projectId: string, project: ProjectSchema): Observable<void>
 
     getLoadingGraph({
         libraries,
@@ -194,13 +194,13 @@ export class Environment implements IEnvironment {
     }
 
     getProject(projectId): Observable<ProjectSchema> {
-        const url = `/api/assets-gateway/raw/flux-project/${projectId}`
+        const url = `/api/assets-gateway/flux-backend/projects/${projectId}`
         const request = new Request(url, { method: 'GET', headers: {} })
         return createObservableFromFetch(request)
     }
 
-    postProject(projectId: string, project: Object): Observable<void> {
-        const url = `/api/assets-gateway/raw/flux-project/${projectId}`
+    postProject(projectId: string, project: ProjectSchema): Observable<void> {
+        const url = `/api/assets-gateway/flux-backend/projects/${projectId}`
         const request = new Request(url, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
