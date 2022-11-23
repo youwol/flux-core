@@ -1,6 +1,6 @@
 
 const runTimeDependencies = {
-    "load": {
+    "externals": {
         "lodash": "^4.17.15",
         "rxjs": "^6.5.5",
         "@youwol/cdn-client": "^1.0.2",
@@ -8,8 +8,7 @@ const runTimeDependencies = {
         "@youwol/flux-view": "^1.0.3",
         "reflect-metadata": "0.1.13"
     },
-    "differed": {},
-    "includedInBundle": []
+    "includedInBundle": {}
 }
 const externals = {
     "lodash": {
@@ -77,10 +76,30 @@ const exportedSymbols = {
         "exportedSymbol": "Reflect"
     }
 }
+
+// eslint-disable-next-line @typescript-eslint/ban-types -- allow to allow no secondary entries
+const mainEntry : Object = {
+    "entryFile": "./index.ts",
+    "loadDependencies": [
+        "lodash",
+        "rxjs",
+        "@youwol/cdn-client",
+        "@youwol/logging",
+        "@youwol/flux-view",
+        "reflect-metadata"
+    ]
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types -- allow to allow no secondary entries
+const secondaryEntries : Object = {}
+const entries = {
+     '@youwol/flux-core': './index.ts',
+    ...Object.values(secondaryEntries).reduce( (acc,e) => ({...acc, [`@youwol/flux-core/${e.name}`]:e.entryFile}), {})
+}
 export const setup = {
     name:'@youwol/flux-core',
         assetId:'QHlvdXdvbC9mbHV4LWNvcmU=',
-    version:'0.2.1',
+    version:'0.2.2',
     shortDescription:"Core library to create flux applications",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/flux-core',
     npmPackage:'https://www.npmjs.com/package/@youwol/flux-core',
@@ -90,7 +109,46 @@ export const setup = {
     runTimeDependencies,
     externals,
     exportedSymbols,
+    entries,
     getDependencySymbolExported: (module:string) => {
         return `${exportedSymbols[module].exportedSymbol}_APIv${exportedSymbols[module].apiKey}`
+    },
+
+    installMainModule: ({cdnClient, installParameters}:{cdnClient, installParameters?}) => {
+        const parameters = installParameters || {}
+        const scripts = parameters.scripts || []
+        const modules = [
+            ...(parameters.modules || []),
+            ...mainEntry['loadDependencies'].map( d => `${d}#${runTimeDependencies.externals[d]}`)
+        ]
+        return cdnClient.install({
+            ...parameters,
+            modules,
+            scripts,
+        }).then(() => {
+            return window[`@youwol/flux-core_APIv02`]
+        })
+    },
+    installAuxiliaryModule: ({name, cdnClient, installParameters}:{name: string, cdnClient, installParameters?}) => {
+        const entry = secondaryEntries[name]
+        const parameters = installParameters || {}
+        const scripts = [
+            ...(parameters.scripts || []),
+            `@youwol/flux-core#0.2.2~dist/@youwol/flux-core/${entry.name}.js`
+        ]
+        const modules = [
+            ...(parameters.modules || []),
+            ...entry.loadDependencies.map( d => `${d}#${runTimeDependencies.externals[d]}`)
+        ]
+        if(!entry){
+            throw Error(`Can not find the secondary entry '${name}'. Referenced in template.py?`)
+        }
+        return cdnClient.install({
+            ...parameters,
+            modules,
+            scripts,
+        }).then(() => {
+            return window[`@youwol/flux-core/${entry.name}_APIv02`]
+        })
     }
 }
